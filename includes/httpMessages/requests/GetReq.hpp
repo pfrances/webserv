@@ -15,13 +15,23 @@
 
 # include "Request.hpp"
 
+class ServConf;
+class Response;
+
 class GetReq : public Request {
 	public:
-		GetReq(void);
 		GetReq(std::string rawRequest);
 		GetReq(const GetReq &other);
 		GetReq &operator=(const GetReq &other);
 		virtual ~GetReq(void);
+
+	protected:
+		virtual bool	isValidReq(void) const;
+	
+	private:
+		GetReq(void);
+		virtual void	process(ServConf conf);
+
 };
 
 #endif

@@ -14,16 +14,21 @@
 # define DELETE_REQ_HPP
 
 # include "Request.hpp"
+class ServConf;
 
 class DeleteReq : public Request {
 	public:
-		DeleteReq(void);
 		DeleteReq(std::string rawRequest);
 		DeleteReq(const DeleteReq &other);
 		DeleteReq &operator=(const DeleteReq &other);
 		virtual ~DeleteReq(void);
 
-		// bool isValid(void) const; ??
+	protected:
+		virtual bool	isValidReq(void) const;
+	
+	private:
+		DeleteReq(void);
+		virtual void	process(ServConf conf);
 };
 
 #endif

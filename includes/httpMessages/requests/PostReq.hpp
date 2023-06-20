@@ -14,6 +14,7 @@
 # define POST_REQ_HPP
 
 # include "Request.hpp"
+class ServConf;
 
 class PostReq : public Request {
 	public:
@@ -22,6 +23,10 @@ class PostReq : public Request {
 		PostReq(const PostReq &other);
 		PostReq &operator=(const PostReq &other);
 		virtual ~PostReq(void);
+
+		virtual bool	isValidReq(void) const;
+	private:
+		virtual void	process(ServConf conf);
 };
 
 #endif

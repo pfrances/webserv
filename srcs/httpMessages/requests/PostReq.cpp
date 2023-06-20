@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "PostReq.hpp"
+#include "ServConf.hpp"
 
 PostReq::PostReq(void) :	Request() {
 
@@ -33,4 +34,13 @@ PostReq &PostReq::operator=(const PostReq &other) {
 
 PostReq::~PostReq(void) {
 
+}
+
+void	PostReq::process(ServConf conf) {
+	(void)conf;
+}
+
+
+bool	PostReq::isValidReq(void) const {
+	return true;
 }

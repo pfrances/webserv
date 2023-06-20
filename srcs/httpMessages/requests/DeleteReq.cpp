@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "DeleteReq.hpp"
+#include "ServConf.hpp"
 
 DeleteReq::DeleteReq(void) :	Request() {
 
@@ -33,4 +34,12 @@ DeleteReq &DeleteReq::operator=(const DeleteReq &other) {
 
 DeleteReq::~DeleteReq(void) {
 
+}
+
+void	DeleteReq::process(ServConf conf) {
+	(void)conf;
+}
+
+bool	DeleteReq::isValidReq(void) const {
+	return true;
 }

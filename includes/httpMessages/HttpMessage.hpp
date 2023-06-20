@@ -14,6 +14,7 @@
 # define HTTP_MESSAGE_HPP
 
 # define CRLF "\r\n" // Carriage Return & Line Feed
+# define DOUBLE_CRLF "\r\n\r\n"
 
 # include <string>
 # include <map>
@@ -34,12 +35,12 @@ class HttpMessage
 		void							setBody(std::string const& body);
 		void							setRawMessage(std::string const& rawMessage);
 
-		std::string const&				getStartLine(void) const;
+		std::string const&				getStartLine(void);
 		std::string const&				getSingleHeader(std::string const& key) const;
 		std::map<std::string,
 				std::string>const&		getHeadersMap(void) const;
 		std::string const&				getBody(void) const;
-		std::string const&				getRawMessage(void) const;
+		std::string const&				getRawMessage(void);
 
 		bool							hasStartLine(void) const;
 		bool							hasHeaders(void) const;
@@ -48,18 +49,18 @@ class HttpMessage
 		bool							hasRawMessage(void) const;
 
 	protected:
+		std::string						rawMessage_;
 		std::string						startLine_;
 		std::map<std::string,
 				std::string>			headersMap_;
 		std::string						body_;
-		std::string						rawMessage_;
 
 		virtual void					parseStartLine(void) = 0;
 		virtual void					updateStartLine(void) = 0;
 
 	private:
 		void							parseRawMessage(void);
-		void							parseHeaders(void);
+		void							parseHeaders(std::string const& headersStr);
 		std::pair<std::string,
 				std::string>			parseSingleHeader(std::string const& header);
 

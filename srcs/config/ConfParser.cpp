@@ -13,10 +13,11 @@
 #include "ConfParser.hpp"
 #include "ServConf.hpp"
 
-ServConf ConfParser::parseSingleServConf(std::string confFileName) const {
+// ServConf ConfParser::parseSingleServConf(std::string confFileName) const {
+// 	(void)confFileName;
+// }
 
-}
-
-std::vector<ServConf> ConfParser::parseMultiServConf(std::string confFileName) const {
-
-}
+// std::vector<ServConf> ConfParser::parseMultiServConf(std::string confFileName) const {
+// 	(void)confFileName;
+//     ServConf tmp();
+// }

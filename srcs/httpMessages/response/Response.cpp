@@ -14,14 +14,14 @@
 
 Response::Response(void) :	HttpMessage(),
 							statusCode_(""),
-							reasonPhrase_(""),
+							statusMessage_(""),
 							httpVersion_("") {
 
 }
 
 Response::Response(std::string rawResponse) :	HttpMessage(rawResponse),
 												statusCode_(""),
-												reasonPhrase_(""),
+												statusMessage_(""),
 												httpVersion_("") {
 	parseStartLine();
 }
@@ -32,7 +32,7 @@ Response::~Response(void) {
 
 Response::Response(const Response &other) : HttpMessage(other),
 											statusCode_(other.statusCode_),
-											reasonPhrase_(other.reasonPhrase_),
+											statusMessage_(other.statusMessage_),
 											httpVersion_(other.httpVersion_) {
 
 }
@@ -41,7 +41,7 @@ Response &Response::operator=(const Response &other) {
 	if (this != &other) {
 		HttpMessage::operator=(other);
 		this->statusCode_ = other.statusCode_;
-		this->reasonPhrase_ = other.reasonPhrase_;
+		this->statusMessage_ = other.statusMessage_;
 		this->httpVersion_ = other.httpVersion_;
 	}
 	return (*this);
@@ -74,19 +74,19 @@ void	Response::setHttpVersion(std::string const& httpVersion) {
 void	Response::parseStartLine(void) {
 	std::string		line;
 	std::string		tmp;
-	std::string		*startLine;
+	std::string		startLine;
 
 	startLine = this->getStartLine();
-	line = *startLine;
+	line = startLine;
 	tmp = line.substr(0, line.find(" "));
 	this->setHttpVersion(tmp);
 	line = line.substr(line.find(" ") + 1);
 	tmp = line.substr(0, line.find(" "));
 	this->setStatusCode(tmp);
 	line = line.substr(line.find(" ") + 1);
-	this->setReasonPhrase(line);
+	this->setStatusMessage(line);
 }
 
 void	Response::updateStartLine(void) {
-	this->setStartLine(this->httpVersion_ + " " + this->statusCode_ + " " + this->reasonPhrase_);
+	this->setStartLine(this->httpVersion_ + " " + this->statusCode_ + " " + this->statusMessage_);
 }

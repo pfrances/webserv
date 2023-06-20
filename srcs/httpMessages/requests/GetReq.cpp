@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "GetReq.hpp"
+#include "ServConf.hpp"
 
 GetReq::GetReq(void) :	Request() {
 
@@ -33,4 +34,16 @@ GetReq &GetReq::operator=(const GetReq &other) {
 
 GetReq::~GetReq(void) {
 
+}
+
+void	GetReq::process(ServConf conf) {
+	(void)conf;
+	this->res_.setStartLine("HTTP/1.1 200 OK");
+	this->res_.setSingleHeader("Content-Type", "text/plain");
+	this->res_.setSingleHeader("Content-Length", "1024");
+	this->res_.setBody("Hello World!!");
+}
+
+bool	GetReq::isValidReq(void) const {
+	return true;
 }

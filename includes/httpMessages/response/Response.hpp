@@ -15,6 +15,8 @@
 
 # include "HttpMessage.hpp"
 
+class ServConf;
+
 class Response : public HttpMessage {
 	public:
 		Response(void);

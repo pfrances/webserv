@@ -11,9 +11,16 @@
 /* ************************************************************************** */
 
 #include <iostream>
+#include "ServerMonitor.hpp"
+#include <stdexcept>
 
 int	main(void)
 {
-	std::cout << "Hello, world!" << std::endl;
+	try {
+		ServerMonitor webserv;
+		webserv.run();
+	} catch(std::exception& e) {
+		std::cerr << e.what() << std::endl;
+	}
 	return (0);
 }

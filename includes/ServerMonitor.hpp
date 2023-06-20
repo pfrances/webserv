@@ -15,19 +15,25 @@
 
 # include <string>
 # include <vector>
+# include <map>
 # include "ServConf.hpp"
+class Response;
 
 class ServerMonitor
 {
 	public:
+		ServerMonitor(void);
 		ServerMonitor(std::string confFileName);
 		ServerMonitor(const ServerMonitor &other);
 		ServerMonitor &operator=(const ServerMonitor &other);
-		~ServerMonitor();
+		~ServerMonitor(void);
+		void	run(void);
 
 	private:
-		ServerMonitor(void);
-		std::vector<ServConf>	servConfs_;
+		// std::vector<ServConf>	servConfs_;
+		std::map<int, Response>	resMap_;
+		std::vector<pollfd>		pollfds_;
+		ServConf	servConfs_;
 };
 
 #endif

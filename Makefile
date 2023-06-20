@@ -16,9 +16,9 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -pedantic -MMD -MP
 INCLUDE =	-I includes							\
 			-I includes/cgi 					\
 			-I includes/config					\
-			-I includes/httpMessage				\
-			-I includes/httpMessage/request		\
-			-I includes/httpMessage/response	\
+			-I includes/httpMessages			\
+			-I includes/httpMessages/requests	\
+			-I includes/httpMessages/response	\
 			-I includes/utils
 
 SRCS_DIR = ./srcs
@@ -27,13 +27,13 @@ OBJS_DIR = ./objs
 CONFIG_DIR = $(SRCS_DIR)/config
 CGI_DIR = $(SRCS_DIR)/cgi
 
-HTTP_DIR = $(SRCS_DIR)/http
-REQUEST_DIR = $(HTTP_DIR)/request
+HTTP_DIR = $(SRCS_DIR)/httpMessages
+REQUEST_DIR = $(HTTP_DIR)/requests
 RESPONSE_DIR = $(HTTP_DIR)/response
 
 UTILS_DIR = $(SRCS_DIR)/utils
 
-SRCS =	$(SRCS_DIR)/main.cpp				\
+SRCS =	$(SRCS_DIR)/main.cpp			\
 		$(SRCS_DIR)/ServerMonitor.cpp	\
 		$(CONFIG_DIR)/ConfParser.cpp	\
 		$(CONFIG_DIR)/Location.cpp		\
@@ -41,19 +41,19 @@ SRCS =	$(SRCS_DIR)/main.cpp				\
 		$(CGI_DIR)/CgiHandler.cpp		\
 		$(HTTP_DIR)/HttpMessage.cpp		\
 		$(REQUEST_DIR)/Request.cpp		\
-		$(REQUEST_DIR)/Delete.cpp		\
-		$(REQUEST_DIR)/Get.cpp			\
-		$(REQUEST_DIR)/Post.cpp			\
-		$(RESPONSE_DIR)/Response.cpp	\
-		$(UTILS_DIR)/Path.cpp			\
-		$(UTILS_DIR)/File.cpp
+		$(REQUEST_DIR)/DeleteReq.cpp	\
+		$(REQUEST_DIR)/GetReq.cpp		\
+		$(REQUEST_DIR)/PostReq.cpp		\
+		$(RESPONSE_DIR)/Response.cpp	
+#		$(UTILS_DIR)/Path.cpp			
+#		$(UTILS_DIR)/File.cpp
 
 OBJS = $(subst $(SRCS_DIR), $(OBJS_DIR), $(SRCS:.cpp=.o))
 
 all: $(NAME)
 
 $(NAME): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(INCLUDE) $< -o $@
+	$(CXX) $(CXXFLAGS) $(INCLUDE) $^ -o $@
 
 $(OBJS_DIR)/%.o: $(SRCS_DIR)/%.cpp
 	@mkdir -p $(@D)

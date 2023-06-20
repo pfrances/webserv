@@ -10,7 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Request.hpp"
+#include "GetReq.hpp"
+#include "PostReq.hpp"
+#include "DeleteReq.hpp"
+#include "ServConf.hpp"
+#include <iostream>
 
 Request::Request(void) :	HttpMessage(),
 							method_(""),
@@ -85,6 +89,11 @@ void	Request::parseStartLine(void) {
 
 void	Request::updateStartLine(void) {
 	setStartLine(this->method_ + " " + this->uri_ + " " + this->httpVersion_);
+}
+
+Response const&	Request::generateResponse(ServConf const& conf) {
+	process(conf);
+	return res_;
 }
 
 Request*	createRequestFromRequestString(std::string const& rawRequest) {

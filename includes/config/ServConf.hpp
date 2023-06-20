@@ -18,10 +18,12 @@
 # include <vector>
 # include <netinet/in.h>
 # include "Location.hpp"
+# include <poll.h>
 
 class ServConf {
 
 public:
+	ServConf(void);
 	ServConf(std::string confFile);
 	~ServConf(void);
 	ServConf(const ServConf &other);
@@ -32,10 +34,10 @@ public:
 	int								getPort(void) const;
 	struct sockaddr_in const&		getSockaddr(void) const;
 	std::vector<Location> const&	getLocations(void) const;
-
+	pollfd const&					getPollFd(void) const;
+	void							startListen(void) const;
 
 private:
-	ServConf(void);
 
 	std::string					serverName_;
 	std::string					host_;
@@ -45,7 +47,9 @@ private:
 
 	Location 					defaultLocation_;
 	std::vector<Location>		locations_;
-
+	pollfd			pollfd_;
 };
+
+int	stringIpToInt(const std::string & ip);
 
 #endif

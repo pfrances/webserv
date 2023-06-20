@@ -52,5 +52,5 @@ Location::~Location(void) {
 }
 
 void Location::parseLocationConf(std::string locationConfig) {
-
+	(void)locationConfig;
 }

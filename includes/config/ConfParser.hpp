@@ -20,8 +20,8 @@ class ServConf;
 
 class ConfParser {
 	public:
-		ServConf parseSingleServConf(std::string confFileName) const;
-		std::vector<ServConf> parseMultiServConf(std::string confFileName) const;
+		// ServConf parseSingleServConf(std::string confFileName) const;
+		// std::vector<ServConf> parseMultiServConf(std::string confFileName) const;
 	
 };
 
