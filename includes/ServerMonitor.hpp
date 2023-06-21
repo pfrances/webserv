@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 15:00:29 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/21 14:56:35 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/21 17:03:25 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,9 +28,9 @@ class ServerMonitor
 {
 	public:
 		ServerMonitor(void);
-		ServerMonitor(std::string confFileName);
-		ServerMonitor(const ServerMonitor &other);
-		ServerMonitor &operator=(const ServerMonitor &other);
+		ServerMonitor(std::string const& confFileName);
+		ServerMonitor(ServerMonitor const& other);
+		ServerMonitor &operator=(ServerMonitor const& other);
 		~ServerMonitor(void);
 		void	run(void);
 

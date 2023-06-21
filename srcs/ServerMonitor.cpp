@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/21 15:03:07 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/21 17:11:05 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,14 +15,13 @@
 #include "Request.hpp"
 #include "Response.hpp"
 #include <iostream>
-#include <cstring>
 #include <unistd.h>
 
 ServerMonitor::ServerMonitor(void) : servConfs_(), resMap_(), pollfds_() {
 	pollfds_.push_back(servConfs_.getPollFd());
 }
 
-ServerMonitor::ServerMonitor(std::string confFileName) {
+ServerMonitor::ServerMonitor(std::string const& confFileName) {
 	(void)confFileName;
 	// servConfs_ = ConfParser::parseMultiServConf(confFileName);
 }
@@ -42,13 +41,13 @@ ServerMonitor::~ServerMonitor(void) {
 	}
 }
 
-ServerMonitor::ServerMonitor(const ServerMonitor &other) :	servConfs_(other.servConfs_),
+ServerMonitor::ServerMonitor(ServerMonitor const& other) :	servConfs_(other.servConfs_),
 															resMap_(other.resMap_),
 															pollfds_(other.pollfds_) {
 
 }
 
-ServerMonitor &ServerMonitor::operator=(const ServerMonitor &other) {
+ServerMonitor &ServerMonitor::operator=(ServerMonitor const& other) {
 	if (this != &other) {
 		this->servConfs_ = other.servConfs_;
 		this->resMap_ = other.resMap_;
@@ -84,6 +83,8 @@ void	ServerMonitor::run(void) {
 			if (it->revents & POLLIN)
 			{
 				std::string msg = getMsg(it->fd);
+				if (msg.empty())
+					continue ;
 				Request *req = createRequestFromRequestString(msg);
 				if (req == NULL)
 					throw std::runtime_error("request error");
