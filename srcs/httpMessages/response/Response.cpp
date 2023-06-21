@@ -6,11 +6,12 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:21 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/19 19:39:42 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/21 14:41:22 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Response.hpp"
+#include <sstream>
 
 Response::Response(void) :	HttpMessage(),
 							statusCode_(""),
@@ -19,10 +20,10 @@ Response::Response(void) :	HttpMessage(),
 
 }
 
-Response::Response(std::string rawResponse) :	HttpMessage(rawResponse),
-												statusCode_(""),
-												statusMessage_(""),
-												httpVersion_("") {
+Response::Response(std::string const& rawResponse) :	HttpMessage(rawResponse),
+														statusCode_(""),
+														statusMessage_(""),
+														httpVersion_("") {
 	parseStartLine();
 }
 
@@ -30,14 +31,14 @@ Response::~Response(void) {
 
 }
 
-Response::Response(const Response &other) : HttpMessage(other),
+Response::Response(Response const& other) : HttpMessage(other),
 											statusCode_(other.statusCode_),
 											statusMessage_(other.statusMessage_),
 											httpVersion_(other.httpVersion_) {
 
 }
 
-Response &Response::operator=(const Response &other) {
+Response &Response::operator=(Response const& other) {
 	if (this != &other) {
 		HttpMessage::operator=(other);
 		this->statusCode_ = other.statusCode_;
@@ -61,30 +62,34 @@ std::string const&	Response::getHttpVersion(void) const {
 
 void	Response::setStatusCode(std::string const& statusCode) {
 	this->statusCode_ = statusCode;
+	this->updateStartLine();
+	this->updateRawMessage();
 }
 
 void	Response::setStatusMessage(std::string const& statusMessage) {
 	this->statusMessage_ = statusMessage;
+	this->updateStartLine();
+	this->updateRawMessage();
 }
 
 void	Response::setHttpVersion(std::string const& httpVersion) {
 	this->httpVersion_ = httpVersion;
+	this->updateStartLine();
+	this->updateRawMessage();
 }
 
 void	Response::parseStartLine(void) {
-	std::string		line;
-	std::string		tmp;
-	std::string		startLine;
+	std::istringstream iss(this->getStartLine());
+	std::string tmp;
 
-	startLine = this->getStartLine();
-	line = startLine;
-	tmp = line.substr(0, line.find(" "));
+	std::getline(iss, tmp, ' ');
 	this->setHttpVersion(tmp);
-	line = line.substr(line.find(" ") + 1);
-	tmp = line.substr(0, line.find(" "));
+
+	std::getline(iss, tmp, ' ');
 	this->setStatusCode(tmp);
-	line = line.substr(line.find(" ") + 1);
-	this->setStatusMessage(line);
+
+	std::getline(iss, tmp);
+	this->setStatusMessage(tmp);
 }
 
 void	Response::updateStartLine(void) {

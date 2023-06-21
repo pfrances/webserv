@@ -6,11 +6,12 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 12:27:17 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/19 16:54:10 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/21 14:41:57 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpMessage.hpp"
+#include <sstream>
 
 HttpMessage::HttpMessage(void) :	rawMessage_(""),
 									startLine_(""),
@@ -20,7 +21,7 @@ HttpMessage::HttpMessage(void) :	rawMessage_(""),
 }
 
 HttpMessage::HttpMessage(std::string const& rawMessage) : rawMessage_(rawMessage) {
-	this->parseRawMessage();
+	parseRawMessage();
 }
 
 HttpMessage::HttpMessage(HttpMessage const& other) :	rawMessage_(other.rawMessage_),
@@ -47,9 +48,12 @@ HttpMessage::~HttpMessage(void) {
 }
 
 /****************************Getters****************************/
-std::string const&	HttpMessage::getStartLine(void) {
-	updateStartLine();
+std::string const&	HttpMessage::getStartLine(void) const {
 	return (this->startLine_);
+}
+
+std::string const&	HttpMessage::getHeadersStr(void) const {
+	return (this->headersStr_);
 }
 
 std::map<std::string, std::string>const&	HttpMessage::getHeadersMap(void) const {
@@ -64,26 +68,37 @@ std::string const&	HttpMessage::getBody(void) const {
 	return (this->body_);
 }
 
-std::string const&	HttpMessage::getRawMessage(void) {
-	updateRawMessage();
+std::string const&	HttpMessage::getRawMessage(void) const {
 	return (this->rawMessage_);
 }
 
 /****************************Setters****************************/
-void	HttpMessage::setStartLine(std::string const& firstLine) {
-	this->startLine_ = firstLine;
+void	HttpMessage::setStartLine(std::string const& startLine) {
+	this->startLine_ = startLine;
+	this->updateRawMessage();
+}
+
+void	HttpMessage::setHeadersStr(std::string const& headersStr) {
+	this->headersStr_ = headersStr;
+	this->parseHeadersMap();
+	this->updateRawMessage();
 }
 
 void	HttpMessage::setSingleHeader(std::string const& key, std::string const& value) {
 	this->headersMap_[key] = value;
+	this->updateHeadersStr();
+	this->updateRawMessage();
 }
 
 void	HttpMessage::setHeadersMap(std::map<std::string, std::string> const& headers) {
 	this->headersMap_ = headers;
+	this->updateHeadersStr();
+	this->updateRawMessage();
 }
 
 void	HttpMessage::setBody(std::string const& body) {
 	this->body_ = body;
+	this->updateRawMessage();
 }
 
 void	HttpMessage::setRawMessage(std::string const& rawMessage) {
@@ -93,16 +108,18 @@ void	HttpMessage::setRawMessage(std::string const& rawMessage) {
 
 /****************************Parsers****************************/
 void	HttpMessage::parseRawMessage() {
-	std::string		parseLine = this->rawMessage_;
 
-	this->startLine_ = parseLine.substr(0, parseLine.find(CRLF));
-	parseLine = parseLine.substr(parseLine.find(CRLF) + 2);
+	std::istringstream iss(this->rawMessage_);
+	std::getline(iss, this->startLine_);
+	// the startLine_ has to be parsed on the child class
 
-	std::string		headersStr = parseLine.substr(0, parseLine.find(DOUBLE_CRLF));
-	std::string		body = parseLine.substr(parseLine.find(DOUBLE_CRLF) + 4);
+	std::string header;
+	while (std::getline(iss, header) && header != "\r") {
+		this->headersStr_ += header + CRLF;
+	}
+	this->parseHeadersMap();
 
-	parseHeaders(headersStr);
-	this->body_ = body;
+	std::getline(iss, this->body_, '\0');
 }
 
 std::pair<std::string, std::string>	HttpMessage::parseSingleHeader(std::string const& header) {
@@ -115,14 +132,14 @@ std::pair<std::string, std::string>	HttpMessage::parseSingleHeader(std::string c
 	return (std::make_pair(key, value));
 }
 
-void	HttpMessage::parseHeaders(std::string const& headersStr) {
-	std::string		parseLine = headersStr;
-	std::string		header;
+void	HttpMessage::parseHeadersMap(void) {
 
-	while (!parseLine.empty()) {
-		header = parseLine.substr(0, parseLine.find(CRLF));
-		parseLine = parseLine.substr(parseLine.find(CRLF) + 2);
-		this->headersMap_.insert(parseSingleHeader(header));
+	std::istringstream iss(this->headersStr_);
+
+	std::string header;
+	while (std::getline(iss, header)) {
+		std::pair<std::string, std::string> headerPair = parseSingleHeader(header);
+		this->headersMap_.insert(headerPair);
 	}
 }
 
@@ -147,18 +164,18 @@ bool	HttpMessage::hasRawMessage(void) const {
 	return (!this->rawMessage_.empty());
 }
 
-void	HttpMessage::updateRawMessage(void) {
+/*********************************Updaters****************************************/
+
+void	HttpMessage::updateHeadersStr(void) {
 	std::map<std::string, std::string>::iterator it = this->headersMap_.begin();
 	std::map<std::string, std::string>::iterator ite = this->headersMap_.end();
 
-	std::string rawMessage = this->startLine_ + CRLF;
-	for (; it != ite; ++it) {
-		rawMessage += it->first + ": " + it->second + CRLF;
+	this->headersStr_ = std::string("");
+	for (; it != ite; it++) {
+		this->headersStr_ += it->first + ": " + it->second + CRLF;
 	}
-	rawMessage += CRLF + this->body_;
+}
 
-	if (this->rawMessage_ != rawMessage) {
-		this->rawMessage_ = rawMessage;
-		parseRawMessage();
-	}
+void	HttpMessage::updateRawMessage(void) {
+	this->rawMessage_ = this->startLine_ + CRLF + this->headersStr_ + CRLF + this->body_;
 }

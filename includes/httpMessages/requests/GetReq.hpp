@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:37:43 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/19 19:38:00 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/21 13:18:40 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,17 +20,16 @@ class Response;
 
 class GetReq : public Request {
 	public:
-		GetReq(std::string rawRequest);
-		GetReq(const GetReq &other);
-		GetReq &operator=(const GetReq &other);
+		GetReq(std::string const& rawRequest);
+		GetReq(GetReq const& other);
+		GetReq &operator=(GetReq const& other);
 		virtual ~GetReq(void);
 
-	protected:
-		virtual bool	isValidReq(void) const;
-	
+		virtual Response*	execute(ServConf const& conf) const;
+
 	private:
 		GetReq(void);
-		virtual void	process(ServConf conf);
+		virtual bool	isValidReq(void) const;
 
 };
 

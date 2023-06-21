@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:36:26 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/19 19:51:38 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/21 13:18:50 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,17 +18,16 @@ class ServConf;
 
 class DeleteReq : public Request {
 	public:
-		DeleteReq(std::string rawRequest);
-		DeleteReq(const DeleteReq &other);
-		DeleteReq &operator=(const DeleteReq &other);
+		DeleteReq(std::string const& rawRequest);
+		DeleteReq(DeleteReq const& other);
+		DeleteReq &operator=(DeleteReq const& other);
 		virtual ~DeleteReq(void);
 
-	protected:
-		virtual bool	isValidReq(void) const;
-	
+		virtual Response*	execute(ServConf const& conf) const;
+
 	private:
 		DeleteReq(void);
-		virtual void	process(ServConf conf);
+		virtual bool	isValidReq(void) const;
 };
 
 #endif

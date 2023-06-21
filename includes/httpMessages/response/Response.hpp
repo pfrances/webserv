@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:20:20 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/19 19:40:09 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/21 14:08:43 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,9 +20,9 @@ class ServConf;
 class Response : public HttpMessage {
 	public:
 		Response(void);
-		Response(std::string rawResponse);
-		Response(const Response &other);
-		Response &operator=(const Response &other);
+		Response(std::string const& rawResponse);
+		Response(Response const& other);
+		Response &operator=(Response const& other);
 		virtual ~Response(void);
 
 		std::string const&	getStatusCode(void) const;

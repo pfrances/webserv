@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:45 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/19 19:49:37 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/21 14:33:13 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 #include "PostReq.hpp"
 #include "DeleteReq.hpp"
 #include "ServConf.hpp"
-#include <iostream>
+#include <sstream>
 
 Request::Request(void) :	HttpMessage(),
 							method_(""),
@@ -23,21 +23,21 @@ Request::Request(void) :	HttpMessage(),
 
 }
 
-Request::Request(std::string rawRequest) :	HttpMessage(rawRequest),
-											method_(""),
-											uri_(""),
-											httpVersion_("") {
+Request::Request(std::string const& rawRequest) :	HttpMessage(rawRequest),
+													method_(""),
+													uri_(""),
+													httpVersion_("") {
 	parseStartLine();
 }
 
-Request::Request(const Request &other) :	HttpMessage(other),
+Request::Request(Request const& other) :	HttpMessage(other),
 											method_(other.method_),
 											uri_(other.uri_),
 											httpVersion_(other.httpVersion_) {
 
 }
 
-Request &Request::operator=(const Request &other) {
+Request &Request::operator=(Request const& other) {
 	if (this != &other) {
 		HttpMessage::operator=(other);
 		this->method_ = other.method_;
@@ -65,35 +65,39 @@ std::string const&	Request::getHttpVersion(void) const {
 
 void	Request::setMethod(std::string const& method) {
 	this->method_ = method;
+	this->updateStartLine();
+	this->updateRawMessage();
 }
 
 void	Request::setUri(std::string const& uri) {
 	this->uri_ = uri;
+	this->updateStartLine();
+	this->updateRawMessage();
 }
 
 void	Request::setHttpVersion(std::string const& httpVersion) {
 	this->httpVersion_ = httpVersion;
+	this->updateStartLine();
+	this->updateRawMessage();
 }
 
 void	Request::parseStartLine(void) {
-	std::string	startLine = getStartLine();
 
-	this->method_ = startLine.substr(0, startLine.find(' '));
-	startLine = startLine.substr(startLine.find(' ') + 1);
+	std::istringstream iss(this->getStartLine());
+	std::string tmp;
 
-	this->uri_ = startLine.substr(0, startLine.find(' '));
-	startLine = startLine.substr(startLine.find(' ') + 1);
+	std::getline(iss, tmp, ' ');
+	this->setMethod(tmp);
 
-	this->httpVersion_ = startLine.substr(0, startLine.find('\r'));
+	std::getline(iss, tmp, ' ');
+	this->setUri(tmp);
+
+	std::getline(iss, tmp);
+	this->setHttpVersion(tmp);
 }
 
 void	Request::updateStartLine(void) {
-	setStartLine(this->method_ + " " + this->uri_ + " " + this->httpVersion_);
-}
-
-Response const&	Request::generateResponse(ServConf const& conf) {
-	process(conf);
-	return res_;
+	this->setStartLine(this->method_ + " " + this->uri_ + " " + this->httpVersion_);
 }
 
 Request*	createRequestFromRequestString(std::string const& rawRequest) {

@@ -6,26 +6,27 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:43:20 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/19 19:43:38 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/21 13:21:29 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "DeleteReq.hpp"
+#include "Response.hpp"
 #include "ServConf.hpp"
 
 DeleteReq::DeleteReq(void) :	Request() {
 
 }
 
-DeleteReq::DeleteReq(std::string rawRequest) :	Request(rawRequest) {
+DeleteReq::DeleteReq(std::string const& rawRequest) :	Request(rawRequest) {
 
 }
 
-DeleteReq::DeleteReq(const DeleteReq &other) :	Request(other) {
+DeleteReq::DeleteReq(DeleteReq const& other) :	Request(other) {
 
 }
 
-DeleteReq &DeleteReq::operator=(const DeleteReq &other) {
+DeleteReq &DeleteReq::operator=(DeleteReq const& other) {
 	if (this != &other) {
 		Request::operator=(other);
 	}
@@ -36,8 +37,9 @@ DeleteReq::~DeleteReq(void) {
 
 }
 
-void	DeleteReq::process(ServConf conf) {
+Response*	DeleteReq::execute(ServConf const& conf) const {
 	(void)conf;
+	return NULL;
 }
 
 bool	DeleteReq::isValidReq(void) const {

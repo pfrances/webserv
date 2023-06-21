@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:44:51 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/19 19:45:58 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/21 14:44:41 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,11 +16,11 @@ CgiHandler::CgiHandler(void) {
 
 }
 
-CgiHandler::CgiHandler(const CgiHandler &other) {
+CgiHandler::CgiHandler(CgiHandler const& other) {
 	*this = other;
 }
 
-CgiHandler &CgiHandler::operator=(const CgiHandler &other) {
+CgiHandler &CgiHandler::operator=(CgiHandler const& other) {
 	if (this != &other) {
 
 	}

@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:38:05 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/19 19:38:21 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/21 13:18:31 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,15 +18,16 @@ class ServConf;
 
 class PostReq : public Request {
 	public:
-		PostReq(void);
-		PostReq(std::string rawRequest);
-		PostReq(const PostReq &other);
-		PostReq &operator=(const PostReq &other);
+		PostReq(std::string const& rawRequest);
+		PostReq(PostReq const& other);
+		PostReq &operator=(PostReq const& other);
 		virtual ~PostReq(void);
 
-		virtual bool	isValidReq(void) const;
+		virtual Response*	execute(ServConf const& conf) const;
+
 	private:
-		virtual void	process(ServConf conf);
+		PostReq(void);
+		virtual bool	isValidReq(void) const;
 };
 
 #endif

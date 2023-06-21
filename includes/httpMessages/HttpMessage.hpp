@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 12:09:28 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/19 16:33:38 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/21 13:20:10 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,6 @@
 # define HTTP_MESSAGE_HPP
 
 # define CRLF "\r\n" // Carriage Return & Line Feed
-# define DOUBLE_CRLF "\r\n\r\n"
 
 # include <string>
 # include <map>
@@ -31,16 +30,18 @@ class HttpMessage
 
 		void							setStartLine(std::string const& firstLine);
 		void							setSingleHeader(std::string const& key, std::string const& value);
+		void							setHeadersStr(std::string const& headersStr);
 		void							setHeadersMap(std::map<std::string, std::string> const& headers);
 		void							setBody(std::string const& body);
 		void							setRawMessage(std::string const& rawMessage);
 
-		std::string const&				getStartLine(void);
+		std::string const&				getStartLine(void) const;
 		std::string const&				getSingleHeader(std::string const& key) const;
 		std::map<std::string,
 				std::string>const&		getHeadersMap(void) const;
+		std::string const&				getHeadersStr(void) const;
 		std::string const&				getBody(void) const;
-		std::string const&				getRawMessage(void);
+		std::string const&				getRawMessage(void) const;
 
 		bool							hasStartLine(void) const;
 		bool							hasHeaders(void) const;
@@ -53,18 +54,20 @@ class HttpMessage
 		std::string						startLine_;
 		std::map<std::string,
 				std::string>			headersMap_;
+		std::string						headersStr_;
 		std::string						body_;
 
 		virtual void					parseStartLine(void) = 0;
 		virtual void					updateStartLine(void) = 0;
+		void							updateRawMessage(void);
 
 	private:
 		void							parseRawMessage(void);
-		void							parseHeaders(std::string const& headersStr);
+		void							parseHeadersMap(void);
 		std::pair<std::string,
 				std::string>			parseSingleHeader(std::string const& header);
 
-		void							updateRawMessage(void);
+		void							updateHeadersStr(void);
 };
 
 #endif

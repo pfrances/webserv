@@ -6,7 +6,7 @@
 #    By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/02/26 11:07:21 by pfrances          #+#    #+#              #
-#    Updated: 2023/06/20 13:00:00 by pfrances         ###   ########.fr        #
+#    Updated: 2023/06/21 14:38:55 by pfrances         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -44,8 +44,8 @@ SRCS =	$(SRCS_DIR)/main.cpp			\
 		$(REQUEST_DIR)/DeleteReq.cpp	\
 		$(REQUEST_DIR)/GetReq.cpp		\
 		$(REQUEST_DIR)/PostReq.cpp		\
-		$(RESPONSE_DIR)/Response.cpp	
-#		$(UTILS_DIR)/Path.cpp			
+		$(RESPONSE_DIR)/Response.cpp
+#		$(UTILS_DIR)/Path.cpp
 #		$(UTILS_DIR)/File.cpp
 
 OBJS = $(subst $(SRCS_DIR), $(OBJS_DIR), $(SRCS:.cpp=.o))
@@ -70,6 +70,10 @@ re: fclean all
 debug: CXXFLAGS += -g -fsanitize=address
 debug: re
 
-.PHONY: all clean fclean re debug
+valgrind: CXXFLAGS += -g
+valgrind: re
+	valgrind ./$(NAME)
+
+.PHONY: all clean fclean re debug valgrind
 
 -include $(DEPS)

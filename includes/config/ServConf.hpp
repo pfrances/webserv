@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 14:10:23 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/19 10:20:15 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/21 14:43:55 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,17 +17,17 @@
 # include <map>
 # include <vector>
 # include <netinet/in.h>
-# include "Location.hpp"
 # include <poll.h>
+# include "Location.hpp"
 
 class ServConf {
 
 public:
 	ServConf(void);
-	ServConf(std::string confFile);
+	ServConf(std::string const& confFile);
 	~ServConf(void);
-	ServConf(const ServConf &other);
-	ServConf &operator=(const ServConf &other);
+	ServConf(ServConf const& other);
+	ServConf &operator=(ServConf const& other);
 
 	std::string const&				getServerName(void) const;
 	std::string const&				getHost(void) const;
@@ -38,7 +38,6 @@ public:
 	void							startListen(void) const;
 
 private:
-
 	std::string					serverName_;
 	std::string					host_;
 	int							port_;
@@ -47,9 +46,9 @@ private:
 
 	Location 					defaultLocation_;
 	std::vector<Location>		locations_;
-	pollfd			pollfd_;
+	pollfd						pollfd_;
 };
 
-int	stringIpToInt(const std::string & ip);
+int	stringIpToInt(std::string const& ip);
 
 #endif
