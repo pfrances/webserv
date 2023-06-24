@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:20:20 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/21 14:08:43 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/23 14:23:36 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 
 # include "HttpMessage.hpp"
 
-class ServConf;
+class Server;
 
 class Response : public HttpMessage {
 	public:

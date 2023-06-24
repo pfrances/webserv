@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:37:43 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/21 13:18:40 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/23 14:23:36 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 
 # include "Request.hpp"
 
-class ServConf;
+class Server;
 class Response;
 
 class GetReq : public Request {
@@ -25,7 +25,7 @@ class GetReq : public Request {
 		GetReq &operator=(GetReq const& other);
 		virtual ~GetReq(void);
 
-		virtual Response*	execute(ServConf const& conf) const;
+		virtual Response*	execute(Server const& conf) const;
 
 	private:
 		GetReq(void);

@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 19:02:03 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/21 13:12:40 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/23 20:36:08 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,9 +14,10 @@
 # define REQUEST_HPP
 
 # include "HttpMessage.hpp"
+# include <vector>
 
 class Response;
-class ServConf;
+class Server;
 
 class Request : public HttpMessage {
 	public:
@@ -34,17 +35,18 @@ class Request : public HttpMessage {
 		void				setUri(std::string const& uri);
 		void				setHttpVersion(std::string const& httpVersion);
 
-		virtual Response*	execute(ServConf const& conf) const = 0;
+		virtual Response*	execute(Server const& conf) const = 0;
 
 	protected:
 		std::string			method_;
 		std::string			uri_;
 		std::string			httpVersion_;
+		//std::vector<pollfd>	pendingFds_;
 		virtual bool		isValidReq(void) const = 0;
 
 	private:
-		virtual	void	parseStartLine(void);
-		virtual void	updateStartLine(void);
+		virtual	void		parseStartLine(void);
+		virtual void		updateStartLine(void);
 };
 
 Request*	createRequestFromRequestString(std::string const& rawRequest);

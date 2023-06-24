@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/20 11:56:13 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/20 12:39:53 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/23 15:08:41 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,13 +20,13 @@ class Directory;
 class File : public Path
 {
 	public:
+		File(void);
 		File(std::string const& path);
 		File(File const& other);
 		File &operator=(File const& other);
 		~File(void);
 
-		bool				isFile(void) const;
-		bool				isDirectory(void) const;
+		bool				exists(void) const;
 		bool				isExecutable(void) const;
 		bool				isReadable(void) const;
 		bool				isWritable(void) const;
@@ -35,25 +35,19 @@ class File : public Path
 		std::string const&	getFileName(void) const;
 		std::string const&	getFileBaseName(void) const;
 		std::string const&	getExtension(void) const;
-		std::string const&	getFileContent(void) const;
-
-		Directory			getDirectory(void) const;
-
+		std::string const&	getFileContent(void);
 
 		void				setFileName(std::string const& fileName);
 		void				setFileBaseName(std::string const& fileBaseName);
 		void				setExtension(std::string const& extension);
 		void				setFileContent(std::string const& content);
-
-		void				write(std::string const& content);
+		void				append(std::string const& content);
 
 	private:
-		File(void);
+		void				read(void);
 		void				write(void);
 		void				parsePath(void);
 
-		bool				isFile_;
-		bool				isDirectory_;
 		bool				isExecutable_;
 		bool				isReadable_;
 		bool				isWritable_;
@@ -65,6 +59,6 @@ class File : public Path
 		std::string			fileContent_;
 };
 
-std::ostream &operator<<(std::ostream &o, File const& file);
+std::ostream &operator<<(std::ostream &o, File& file);
 
 #endif

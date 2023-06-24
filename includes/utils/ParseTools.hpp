@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ConfParser.hpp                                     :+:      :+:    :+:   */
+/*   ParseTools.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 17:53:49 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/18 19:21:29 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/24 13:06:15 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,13 +16,18 @@
 # include <string>
 # include <vector>
 
-class ServConf;
+class Server;
 
-class ConfParser {
+class ParseTools {
 	public:
-		// ServConf parseSingleServConf(std::string confFileName) const;
-		// std::vector<ServConf> parseMultiServConf(std::string confFileName) const;
-	
+		static std::string				getNextToken(std::string const& str,
+												std::string::const_iterator& it);
+		static std::vector<std::string> getAllTokensUntilSemicolon(std::string const& str,
+													std::string::const_iterator& it);
+		static std::string				extractBlock(std::string const& conf,
+													std::string::const_iterator& it);
+
+private:
 };
 
 #endif

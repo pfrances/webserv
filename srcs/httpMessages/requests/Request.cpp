@@ -6,14 +6,14 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:45 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/21 14:33:13 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/23 14:25:30 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "GetReq.hpp"
 #include "PostReq.hpp"
 #include "DeleteReq.hpp"
-#include "ServConf.hpp"
+#include "Server.hpp"
 #include <sstream>
 
 Request::Request(void) :	HttpMessage(),

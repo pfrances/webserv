@@ -6,38 +6,45 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/20 12:30:35 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/20 12:37:43 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/23 15:11:28 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "File.hpp"
+#include <fstream>
+#include <unistd.h>
 
 File::File(void) :	Path(),
-					name_(""),
+					fileName_(""),
+					fileBaseName_(""),
 					extension_(""),
-					content_("") {
+					fileContent_("") {
 
 }
 
-File::File(std::string const& path) :	Path(path) {
+File::File(std::string const& path) :	Path(path),
+										fileName_(""),
+										fileBaseName_(""),
+										extension_(""),
+										fileContent_("") {
 	this->parsePath();
 }
 
 File::File(File const& other) :	Path(other),
-								name_(other.name_),
+								fileName_(other.fileName_),
+								fileBaseName_(other.fileBaseName_),
 								extension_(other.extension_),
-								content_(other.content_) {
-	if (this != &other) {
-		*this = other;
-	}
+								fileContent_(other.fileContent_) {
+
 }
 
 File &File::operator=(File const& other) {
 	if (this != &other) {
 		this->Path::operator=(other);
-		this->name_ = other.name_;
+		this->fileName_ = other.fileName_;
+		this->fileBaseName_ = other.fileBaseName_;
 		this->extension_ = other.extension_;
-		this->content_ = other.content_;
+		this->fileContent_ = other.fileContent_;
 	}
 	return (*this);
 }
@@ -46,16 +53,66 @@ File::~File(void) {
 
 }
 
-std::string const&	File::getName(void) const {
-	return (this->name_);
+std::string const&	File::getFileName(void) const {
+	return (this->fileName_);
+}
+
+std::string const&	File::getFileBaseName(void) const {
+	return (this->fileBaseName_);
 }
 
 std::string const&	File::getExtension(void) const {
 	return (this->extension_);
 }
 
-std::string const&	File::getContent(void) const {
-	return (this->content_);
+std::string const&	File::getFileContent(void) {
+	if (this->fileContent_.empty()) {
+		this->read();
+	}
+	return (this->fileContent_);
+}
+
+void	File::setFileName(std::string const& fileName) {
+	this->fileName_ = fileName;
+}
+
+void	File::setFileBaseName(std::string const& fileBaseName) {
+	this->fileBaseName_ = fileBaseName;
+}
+
+void	File::setExtension(std::string const& extension) {
+	this->extension_ = extension;
+}
+
+void	File::setFileContent(std::string const& content) {
+	if (this->fileContent_ != content) {
+		this->fileContent_ = content;
+		this->write();
+	}
+}
+
+bool	File::exists(void) const {
+	std::ifstream	file(this->getFullPath().c_str());
+	bool			exists = file.good();
+
+	file.close();
+	return (exists);
+}
+
+bool	File::isExecutable(void) const {
+	return (this->exists() && access(this->getFullPath().c_str(), X_OK) == 0);
+}
+
+bool	File::isReadable(void) const {
+	return (this->exists() && access(this->getFullPath().c_str(), R_OK) == 0);
+}
+
+bool	File::isWritable(void) const {
+	return (this->exists() && access(this->getFullPath().c_str(), W_OK) == 0);
+}
+
+bool	File::isHidden(void) const {
+	return (this->fileName_[0] == '.');
 }
 
 void	File::parsePath(void) {
@@ -65,15 +122,31 @@ void	File::parsePath(void) {
 	size_t				lastSeparator = path.find_last_of("/.");
 
 	if (lastSlash == std::string::npos) {
-		this->name_ = path.substr(0, lastDot);
+		this->fileName_ = path.substr(0, lastDot);
 		this->extension_ = path.substr(lastDot + 1);
 	} else if (lastDot == std::string::npos) {
-		this->name_ = path.substr(lastSlash + 1);
+		this->fileName_ = path.substr(lastSlash + 1);
 	} else if (lastSlash > lastDot) {
-		this->name_ = path.substr(lastSlash + 1);
+		this->fileName_ = path.substr(lastSlash + 1);
 	} else {
-		this->name_ = path.substr(lastSlash + 1, lastDot - lastSlash - 1);
+		this->fileName_ = path.substr(lastSlash + 1, lastDot - lastSlash - 1);
 		this->extension_ = path.substr(lastDot + 1);
+	}
+	if (lastSeparator == std::string::npos) {
+		this->fileBaseName_ = this->fileName_;
+	} else {
+		this->fileBaseName_ = path.substr(lastSeparator + 1);
+	}
+}
+
+void	File::write(void) {
+
+	std::ofstream	file(this->getFullPath().c_str());
+	if (file.is_open()) {
+		file << this->fileContent_;
+		file.close();
+	} else {
+		throw std::runtime_error("Cannot open file");
 	}
 }
 
@@ -81,33 +154,29 @@ void	File::read(void) {
 	std::ifstream	file(this->getFullPath().c_str());
 
 	if (file.is_open()) {
-		std::stringstream	buffer;
-
-		buffer << file.rdbuf();
-		this->content_ = buffer.str();
+		std::string	line;
+		while (std::getline(file, line)) {
+			this->fileContent_ += line + "\n";
+		}
 		file.close();
 	} else {
-		throw File::FileException("Cannot open file");
+		throw std::runtime_error("Cannot open file");
 	}
 }
 
-void	File::write(void) {
-	std::ofstream	file(this->getFullPath().c_str());
+void	File::append(std::string const& content) {
+	std::ofstream	file(this->getFullPath().c_str(), std::ios_base::app);
 
 	if (file.is_open()) {
-		file << this->content_;
+		file << content;
 		file.close();
 	} else {
-		throw File::FileException("Cannot open file");
+		throw std::runtime_error("Cannot open file");
 	}
+	this->fileContent_ += content;
 }
 
-void	File::write(std::string const& content) {
-	this->content_ = content;
-	this->write();
-}
-
-std::ostream &operator<<(std::ostream &o, File const& file) {
-	o << file.getContent();
+std::ostream &operator<<(std::ostream &o, File& file) {
+	o << file.getFileContent();
 	return (o);
 }

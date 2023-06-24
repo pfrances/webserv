@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 15:00:29 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/21 17:03:25 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/24 14:18:30 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 # define BUFFER_SIZE 1024
 #endif
 
-# include "ServConf.hpp"
+# include "Server.hpp"
 # include <string>
 # include <vector>
 # include <map>
@@ -35,13 +35,13 @@ class ServerMonitor
 		void	run(void);
 
 	private:
-		// std::vector<ServConf>	servConfs_;
-		ServConf					servConfs_;
+		std::vector<Server>			serversVec_;
 		std::map<int, Response*>	resMap_;
 		std::vector<pollfd>			pollfds_;
 
 		std::string					getMsg(int socketFd);
 		void						closeConnection(int socketFd);
+		void						setServersStartListen(void) const;
 };
 
 #endif

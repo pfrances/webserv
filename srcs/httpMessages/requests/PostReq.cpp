@@ -6,13 +6,13 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:42:22 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/21 13:21:25 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/23 14:25:54 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "PostReq.hpp"
 #include "Response.hpp"
-#include "ServConf.hpp"
+#include "Server.hpp"
 
 PostReq::PostReq(void) :	Request() {
 
@@ -37,7 +37,7 @@ PostReq::~PostReq(void) {
 
 }
 
-Response*	PostReq::execute(ServConf const& conf) const {
+Response*	PostReq::execute(Server const& conf) const {
 	(void)conf;
 	return NULL;
 }

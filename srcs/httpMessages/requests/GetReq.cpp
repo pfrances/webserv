@@ -6,13 +6,13 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:42:59 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/21 14:43:15 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/23 20:10:16 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "GetReq.hpp"
 #include "Response.hpp"
-#include "ServConf.hpp"
+#include "Server.hpp"
 #include <iostream>
 
 GetReq::GetReq(void) :	Request() {
@@ -38,7 +38,7 @@ GetReq::~GetReq(void) {
 
 }
 
-Response*	GetReq::execute(ServConf const& conf) const {
+Response*	GetReq::execute(Server const& conf) const {
 	(void)conf;
 	Response *res = new Response();
 	res->setStartLine("HTTP/1.1 200 OK");

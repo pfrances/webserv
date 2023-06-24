@@ -6,7 +6,7 @@
 #    By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/02/26 11:07:21 by pfrances          #+#    #+#              #
-#    Updated: 2023/06/21 14:38:55 by pfrances         ###   ########.fr        #
+#    Updated: 2023/06/24 13:34:07 by pfrances         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -35,18 +35,18 @@ UTILS_DIR = $(SRCS_DIR)/utils
 
 SRCS =	$(SRCS_DIR)/main.cpp			\
 		$(SRCS_DIR)/ServerMonitor.cpp	\
-		$(CONFIG_DIR)/ConfParser.cpp	\
 		$(CONFIG_DIR)/Location.cpp		\
-		$(CONFIG_DIR)/ServConf.cpp		\
+		$(CONFIG_DIR)/Server.cpp		\
 		$(CGI_DIR)/CgiHandler.cpp		\
 		$(HTTP_DIR)/HttpMessage.cpp		\
 		$(REQUEST_DIR)/Request.cpp		\
 		$(REQUEST_DIR)/DeleteReq.cpp	\
 		$(REQUEST_DIR)/GetReq.cpp		\
 		$(REQUEST_DIR)/PostReq.cpp		\
-		$(RESPONSE_DIR)/Response.cpp
-#		$(UTILS_DIR)/Path.cpp
-#		$(UTILS_DIR)/File.cpp
+		$(RESPONSE_DIR)/Response.cpp	\
+		$(UTILS_DIR)/ParseTools.cpp		\
+		$(UTILS_DIR)/Path.cpp			\
+		$(UTILS_DIR)/File.cpp
 
 OBJS = $(subst $(SRCS_DIR), $(OBJS_DIR), $(SRCS:.cpp=.o))
 
@@ -72,7 +72,7 @@ debug: re
 
 valgrind: CXXFLAGS += -g
 valgrind: re
-	valgrind ./$(NAME)
+	valgrind ./$(NAME) confs/config.txt
 
 .PHONY: all clean fclean re debug valgrind
 

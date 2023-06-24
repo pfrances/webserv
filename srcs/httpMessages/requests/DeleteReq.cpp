@@ -6,13 +6,13 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:43:20 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/21 13:21:29 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/23 14:25:40 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "DeleteReq.hpp"
 #include "Response.hpp"
-#include "ServConf.hpp"
+#include "Server.hpp"
 
 DeleteReq::DeleteReq(void) :	Request() {
 
@@ -37,7 +37,7 @@ DeleteReq::~DeleteReq(void) {
 
 }
 
-Response*	DeleteReq::execute(ServConf const& conf) const {
+Response*	DeleteReq::execute(Server const& conf) const {
 	(void)conf;
 	return NULL;
 }
