@@ -37,8 +37,8 @@ PostReq::~PostReq(void) {
 
 }
 
-Response*	PostReq::execute(Server const& conf) const {
-	(void)conf;
+Response*	PostReq::execute(ServerMonitor& serverMonitor) const {
+	(void)serverMonitor;
 	return NULL;
 }
 

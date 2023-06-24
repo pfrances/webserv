@@ -25,7 +25,7 @@ class GetReq : public Request {
 		GetReq &operator=(GetReq const& other);
 		virtual ~GetReq(void);
 
-		virtual Response*	execute(Server const& conf) const;
+		virtual Response*	execute(ServerMonitor& serverMonitor) const;
 
 	private:
 		GetReq(void);

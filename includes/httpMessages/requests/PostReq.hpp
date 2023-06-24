@@ -23,7 +23,7 @@ class PostReq : public Request {
 		PostReq &operator=(PostReq const& other);
 		virtual ~PostReq(void);
 
-		virtual Response*	execute(Server const& conf) const;
+		virtual Response*	execute(ServerMonitor& serverMonitor) const;
 
 	private:
 		PostReq(void);

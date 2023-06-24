@@ -1,5 +1,5 @@
 server {
-	listen 12345;         # Port number to listen on
+	listen 8080;         # Port number to listen on
 	server_name example.com;    # Server name
 
 	error_page 404 /errors/404.html;    # Default error page for 404 Not Found

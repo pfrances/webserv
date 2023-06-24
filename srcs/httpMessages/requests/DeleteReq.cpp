@@ -37,8 +37,8 @@ DeleteReq::~DeleteReq(void) {
 
 }
 
-Response*	DeleteReq::execute(Server const& conf) const {
-	(void)conf;
+Response*	DeleteReq::execute(ServerMonitor& serverMonitor) const {
+	(void)serverMonitor;
 	return NULL;
 }
 

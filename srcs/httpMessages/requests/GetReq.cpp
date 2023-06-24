@@ -38,8 +38,8 @@ GetReq::~GetReq(void) {
 
 }
 
-Response*	GetReq::execute(Server const& conf) const {
-	(void)conf;
+Response*	GetReq::execute(ServerMonitor& serverMonitor) const {
+	(void)serverMonitor;
 	Response *res = new Response();
 	res->setStartLine("HTTP/1.1 200 OK");
 	res->setSingleHeader("Content-Type", "text/plain");

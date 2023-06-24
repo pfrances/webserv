@@ -10,8 +10,10 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "ServerMonitor.hpp"
 #include "Server.hpp"
 #include "ParseTools.hpp"
+#include "Client.hpp"
 #include <stdexcept>
 #include <cstdlib>
 #include <iostream>
@@ -87,8 +89,16 @@ std::vector<Location> const& Server::getLocations(void) const {
 	return (this->locations_);
 }
 
-struct pollfd const& Server::getPollFd(void) const {
+struct pollfd& Server::getPollFd(void) {
 	return (this->pollfd_);
+}
+
+std::vector<Client>&	Server::getClients(void) {
+	return (this->clients_);
+}
+
+Client& Server::getClientAt(int index) {
+	return (this->clients_.at(index));
 }
 
 int Server::getPollFdFd(void) const {
@@ -147,6 +157,43 @@ void	Server::setPollFdFd(int fd) {
 	this->pollfd_.fd = fd;
 }
 
+void	Server::addNewClients(ServerMonitor& serverMonitor) {
+	if (this->pollfd_.revents & POLLIN) {
+		
+		struct sockaddr_in clientAddr;
+		socklen_t clientAddrLen = sizeof(clientAddr);
+		
+		pollfd clientFd;
+		clientFd.fd = accept(this->pollfd_.fd, (struct sockaddr *)&clientAddr, &clientAddrLen);
+		if (clientFd.fd < 0)
+			throw std::runtime_error("accept error");
+		clientFd.events = POLLIN;
+		clientFd.revents = 0;
+		
+		Client newClient;
+		newClient.setPollfd(clientFd);
+		this->clients_.push_back(newClient);
+		std::cout << __FILE__ << " " << __LINE__ << std::endl;
+		serverMonitor.addFd(clientFd);
+	}
+}
+
+void	Server::clientCommunication(ServerMonitor& serverMonitor) {
+	std::vector<Client>::iterator it = this->clients_.begin();
+	std::vector<Client>::iterator ite = this->clients_.end();
+
+	for (; it != ite; it++) {
+		//it->checkPendingRequests(serverMonitor);
+		try {
+			it->takeMessagesFromClient(serverMonitor);
+			it->sendMessagesToClient();
+		} catch (std::exception& e) {
+		    serverMonitor.closePollfd(it->getPollfd().fd);
+            this->clients_.erase(it);
+		}
+	}
+}
+
 void	Server::startListen(void) const {
 	if (listen(this->pollfd_.fd, 10) < 0)
 		throw std::runtime_error("listen error");
@@ -201,6 +248,7 @@ void	Server::parseServerConf(std::string const& serverConf) {
 		itLoc->applyDefaultValues(this->defaultLocation_);
 	}
 }
+
 
 int	stringIpToInt(std::string const& ip) {
 	std::string::const_iterator it = ip.begin();

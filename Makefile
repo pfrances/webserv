@@ -35,6 +35,7 @@ UTILS_DIR = $(SRCS_DIR)/utils
 
 SRCS =	$(SRCS_DIR)/main.cpp			\
 		$(SRCS_DIR)/ServerMonitor.cpp	\
+		$(SRCS_DIR)/Client.cpp			\
 		$(CONFIG_DIR)/Location.cpp		\
 		$(CONFIG_DIR)/Server.cpp		\
 		$(CGI_DIR)/CgiHandler.cpp		\

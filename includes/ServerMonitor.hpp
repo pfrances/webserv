@@ -17,12 +17,12 @@
 # define BUFFER_SIZE 1024
 #endif
 
-# include "Server.hpp"
 # include <string>
 # include <vector>
-# include <map>
+# include <poll.h>
 
 class Response;
+class Server;
 
 class ServerMonitor
 {
@@ -32,15 +32,13 @@ class ServerMonitor
 		ServerMonitor(ServerMonitor const& other);
 		ServerMonitor &operator=(ServerMonitor const& other);
 		~ServerMonitor(void);
-		void	run(void);
+		void			run(void);
+		void			addFd(pollfd const& pollfd);
+		void			closePollfd(int fd);
 
 	private:
 		std::vector<Server>			serversVec_;
-		std::map<int, Response*>	resMap_;
 		std::vector<pollfd>			pollfds_;
-
-		std::string					getMsg(int socketFd);
-		void						closeConnection(int socketFd);
 		void						setServersStartListen(void) const;
 };
 

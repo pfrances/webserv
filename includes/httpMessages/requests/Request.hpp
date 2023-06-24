@@ -16,6 +16,7 @@
 # include "HttpMessage.hpp"
 # include <vector>
 
+class ServerMonitor;
 class Response;
 class Server;
 
@@ -35,7 +36,7 @@ class Request : public HttpMessage {
 		void				setUri(std::string const& uri);
 		void				setHttpVersion(std::string const& httpVersion);
 
-		virtual Response*	execute(Server const& conf) const = 0;
+		virtual Response*	execute(ServerMonitor& serverMonitor) const = 0;
 
 	protected:
 		std::string			method_;

@@ -23,7 +23,7 @@ class DeleteReq : public Request {
 		DeleteReq &operator=(DeleteReq const& other);
 		virtual ~DeleteReq(void);
 
-		virtual Response*	execute(Server const& conf) const;
+		virtual Response*	execute(ServerMonitor& serverMonitor) const;
 
 	private:
 		DeleteReq(void);
