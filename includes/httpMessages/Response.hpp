@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:20:20 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/23 14:23:36 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/28 14:33:19 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,8 +14,6 @@
 # define RESPONSE_HPP
 
 # include "HttpMessage.hpp"
-
-class Server;
 
 class Response : public HttpMessage {
 	public:
@@ -33,14 +31,13 @@ class Response : public HttpMessage {
 		void				setStatusMessage(std::string const& statusMessage);
 		void				setHttpVersion(std::string const& httpVersion);
 
-	protected:
-		std::string			statusCode_;
-		std::string			statusMessage_;
-		std::string			httpVersion_;
-
 	private:
 		virtual	void		parseStartLine(void);
 		virtual void		updateStartLine(void);
+
+		std::string			statusCode_;
+		std::string			statusMessage_;
+		std::string			httpVersion_;
 };
 
 #endif
