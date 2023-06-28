@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 19:02:03 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/23 20:36:08 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/28 16:29:59 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,41 +14,36 @@
 # define REQUEST_HPP
 
 # include "HttpMessage.hpp"
-# include <vector>
-
-class Response;
-class Server;
 
 class Request : public HttpMessage {
 	public:
-		Request(void);
-		Request(std::string const& rawRequest);
+		Request(std::string const& rawRequest, int clientSocket);
 		Request(Request const& other);
 		Request &operator=(Request const& other);
 		virtual ~Request(void);
 
-		std::string const&	getMethod(void) const;
-		std::string const&	getUri(void) const;
-		std::string const&	getHttpVersion(void) const;
+		std::string const&		getMethod(void) const;
+		std::string const&		getUri(void) const;
+		std::string const&		getHttpVersion(void) const;
 
-		void				setMethod(std::string const& method);
-		void				setUri(std::string const& uri);
-		void				setHttpVersion(std::string const& httpVersion);
-
-		virtual Response*	execute(Server const& conf) const = 0;
-
-	protected:
-		std::string			method_;
-		std::string			uri_;
-		std::string			httpVersion_;
-		//std::vector<pollfd>	pendingFds_;
-		virtual bool		isValidReq(void) const = 0;
+		void					setMethod(std::string const& method);
+		void					setUri(std::string const& uri);
+		void					setQuery(std::string const& querryStr);
+		void					setHttpVersion(std::string const& httpVersion);
 
 	private:
-		virtual	void		parseStartLine(void);
-		virtual void		updateStartLine(void);
-};
+		Request(void);
+		virtual	void			parseStartLine(void);
+		virtual void			updateStartLine(void);
 
-Request*	createRequestFromRequestString(std::string const& rawRequest);
+		std::string				method_;
+		std::string				uri_;
+		std::map<std::string,
+				 std::string>	query_;
+
+		std::string				httpVersion_;
+
+		int						clientSocket_;
+};
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 15:00:29 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/24 14:18:30 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/28 15:59:48 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,12 +17,13 @@
 # define BUFFER_SIZE 1024
 #endif
 
-# include "Server.hpp"
 # include <string>
 # include <vector>
 # include <map>
+# include <poll.h>
 
 class Response;
+class Server;
 
 class ServerMonitor
 {
@@ -32,16 +33,28 @@ class ServerMonitor
 		ServerMonitor(ServerMonitor const& other);
 		ServerMonitor &operator=(ServerMonitor const& other);
 		~ServerMonitor(void);
-		void	run(void);
+
+		void					run(void);
+
+
+		void					removePollfd(int fd);
 
 	private:
-		std::vector<Server>			serversVec_;
-		std::map<int, Response*>	resMap_;
-		std::vector<pollfd>			pollfds_;
+		std::map<int, Server*>		serversMap_;
+		std::map<int, Server*>		clientsMap_;
+		std::map<int, Response*>	responsesMap_;
+		std::vector<pollfd>			pollfdsVec_;
 
-		std::string					getMsg(int socketFd);
-		void						closeConnection(int socketFd);
 		void						setServersStartListen(void) const;
+
+		void						handleNewConnection(int fd);
+		void						handleClientRequest(pollfd& pollfd);
+		void						handleResponseToSend(pollfd& pollfd);
+
+		std::string 				recvMsg(int fd) const;
+		void						sendMsg(int fd, std::string const& msg) const;
+
+		int							getPollfdsVecIndxFromFd(int fd) const;
 };
 
 #endif

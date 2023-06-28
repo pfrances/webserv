@@ -6,7 +6,7 @@
 #    By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/02/26 11:07:21 by pfrances          #+#    #+#              #
-#    Updated: 2023/06/24 13:34:07 by pfrances         ###   ########.fr        #
+#    Updated: 2023/06/28 15:34:24 by pfrances         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -15,37 +15,30 @@ CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -pedantic -MMD -MP
 INCLUDE =	-I includes							\
 			-I includes/cgi 					\
-			-I includes/config					\
+			-I includes/servers					\
 			-I includes/httpMessages			\
-			-I includes/httpMessages/requests	\
-			-I includes/httpMessages/response	\
 			-I includes/utils
 
 SRCS_DIR = ./srcs
 OBJS_DIR = ./objs
 
-CONFIG_DIR = $(SRCS_DIR)/config
+SERVERS_DIR = $(SRCS_DIR)/servers
 CGI_DIR = $(SRCS_DIR)/cgi
 
 HTTP_DIR = $(SRCS_DIR)/httpMessages
-REQUEST_DIR = $(HTTP_DIR)/requests
-RESPONSE_DIR = $(HTTP_DIR)/response
 
 UTILS_DIR = $(SRCS_DIR)/utils
 
-SRCS =	$(SRCS_DIR)/main.cpp			\
-		$(SRCS_DIR)/ServerMonitor.cpp	\
-		$(CONFIG_DIR)/Location.cpp		\
-		$(CONFIG_DIR)/Server.cpp		\
-		$(CGI_DIR)/CgiHandler.cpp		\
-		$(HTTP_DIR)/HttpMessage.cpp		\
-		$(REQUEST_DIR)/Request.cpp		\
-		$(REQUEST_DIR)/DeleteReq.cpp	\
-		$(REQUEST_DIR)/GetReq.cpp		\
-		$(REQUEST_DIR)/PostReq.cpp		\
-		$(RESPONSE_DIR)/Response.cpp	\
-		$(UTILS_DIR)/ParseTools.cpp		\
-		$(UTILS_DIR)/Path.cpp			\
+SRCS =	$(SRCS_DIR)/main.cpp				\
+		$(SERVERS_DIR)/ServerMonitor.cpp	\
+		$(SERVERS_DIR)/Location.cpp			\
+		$(SERVERS_DIR)/Server.cpp			\
+		$(CGI_DIR)/CgiHandler.cpp			\
+		$(HTTP_DIR)/HttpMessage.cpp			\
+		$(HTTP_DIR)/Request.cpp				\
+		$(HTTP_DIR)/Response.cpp			\
+		$(UTILS_DIR)/ParseTools.cpp			\
+		$(UTILS_DIR)/Path.cpp				\
 		$(UTILS_DIR)/File.cpp
 
 OBJS = $(subst $(SRCS_DIR), $(OBJS_DIR), $(SRCS:.cpp=.o))

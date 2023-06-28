@@ -48,10 +48,10 @@ class File : public Path
 		void				write(void);
 		void				parsePath(void);
 
-		bool				isExecutable_;
-		bool				isReadable_;
-		bool				isWritable_;
-		bool				isHidden_;
+		// bool				isExecutable_;
+		// bool				isReadable_;
+		// bool				isWritable_;
+		// bool				isHidden_;
 
 		std::string			fileName_;
 		std::string			fileBaseName_;

@@ -1,5 +1,5 @@
 server {
-	listen 12345;         # Port number to listen on
+	listen 8080;         # Port number to listen on
 	server_name example.com;    # Server name
 
 	error_page 404 /errors/404.html;    # Default error page for 404 Not Found
@@ -8,13 +8,19 @@ server {
 		root /tmp;
 
 	location / {
-		root /var/www/html;    # Serve files from this directory for the route '/'
-		index index.html;    # Default file to answer if the request is a directory
-		directory_listing on;    # Enable directory listing
+		root /home/pierre/42/rank5/webserver;    # Serve files from this directory for the route '/'
+		index index.html;      # Default file to answer if the request is a directory
+		directory_listing on;  # Enable directory listing
 	}
 
 	location /kapouet {
 		root /tmp/www;    # Serve files from this directory for the route '/kapouet'
+		index index.html;    # Default file to answer if the request is a directory
+	}
+
+	location /kapouet/abc {
+		root /tmp/html;    # Serve files from this directory for the route '/kapouet'
+		index index.html;    # Default file to answer if the request is a directory
 	}
 
 	location /api {
