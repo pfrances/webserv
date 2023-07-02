@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 14:20:33 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/24 13:25:09 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/01 19:51:04 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,14 +29,18 @@ public:
 	std::string const&							getRoot(void) const;
 	std::string const&							getUploadPath(void) const;
 	std::vector<std::string> const&				getIndex(void) const;
-	std::vector<std::string> const&				getTryFiles(void) const;
 	std::map<int, std::string> const&			getErrorPages(void) const;
 	std::map<std::string, std::string> const&	getRedirect(void) const;
 	std::vector<std::string> const&				getAllowedMethods(void) const;
 	std::vector<std::string> const&				getCgiPath(void) const;
-	std::vector<std::string> const&				getCgiExtension(void) const;
+	std::vector<std::string> const&				getCgiExtensions(void) const;
 	size_t										getClientMaxBodySize(void) const;
-	bool										getDirectoryListing(void) const;
+	bool										getAutoIndex(void) const;
+
+	bool										isGetAllowed(void) const;
+	bool										isPostAllowed(void) const;
+	bool										isDeleteAllowed(void) const;
+
 
 	void		setPath(std::string const& path);
 
@@ -46,9 +50,6 @@ public:
 
 	void		setIndex(std::vector<std::string> const& index);
 	void		addIndex(std::string const& index);
-
-	void		setTryFiles(std::vector<std::string> const& tryFiles);
-	void		addTryFiles(std::string const& tryFiles);
 
 	void		setErrorPages(std::map<int, std::string> const& errorPages);
 	void		addErrorPages(int errorCode, std::string const& errorPage);
@@ -60,7 +61,7 @@ public:
 	void		setAllowedMethods(std::vector<std::string> const& allowedMethods);
 	void		addAllowedMethods(std::string const& allowedMethods);
 
-	void		setCgiPath(std::vector<std::string> const& cgiPath);
+	void		setCgiPath(std::vector<std::string> const& cgiPaths);
 	void		addCgiPath(std::string const& cgiPath);
 
 	void		setCgiExtension(std::vector<std::string> const& cgiExtension);
@@ -69,7 +70,7 @@ public:
 	void		setClientMaxBodySize(size_t clientMaxBodySize);
 	void		setClientMaxBodySize(std::string const& clientMaxBodySize);
 
-	void		setDirectoryListing(bool directoryListing);
+	void		setAutoIndex(bool directoryListing);
 
 	void		applyDefaultValues(Location const& defaultLocation);
 
@@ -82,18 +83,17 @@ private:
 	std::string							uploadPath_;
 
  	std::vector<std::string>			index_;
-	std::vector<std::string>			tryFiles_;
  	std::map<int, std::string>			errorPages_;
 
 	std::map<std::string, std::string>	redirect_;
 
 	std::vector<std::string>			allowedMethods_;
 
-	std::vector<std::string>			cgiPath_;
-	std::vector<std::string>			cgiExtension_;
+	std::vector<std::string>			cgiPaths_;
+	std::vector<std::string>			cgiExtensions_;
 
 	size_t								clientMaxBodySize_;
-	bool								directoryListing_;
+	bool								autoIndex_;
 };
 
 #endif

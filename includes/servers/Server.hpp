@@ -20,6 +20,7 @@
 
 class Request;
 class Response;
+class File;
 
 class Server {
 	public:
@@ -38,6 +39,8 @@ class Server {
 		int						acceptNewClient(void);
 		Response*				handleClientRequest(Request const& req) const;
 
+		bool					isCgiRequest(Request const& req) const;
+
 	private:
 		Server(void);
 		void					parseServerConf(std::string const& serverConf);
@@ -46,19 +49,24 @@ class Server {
 
 		Location*				getCorrespondingLocation(std::string const& uri) const;
 
+		Response*				handleError(int statusCode, Location *location) const;
+		std::string				setFileListHtmlToReqBody(std::map<std::string, std::string> const& filesList,
+														Request const& req) const;
+		Response*				handleIndexing(File const& file, Request const& req, Location *location) const;
 		Response*				handleGetRequest(Request const& req) const;
 		Response*				handlePostRequest(Request const& req) const;
 		Response*				handleDeleteRequest(Request const& req) const;
 		Response*				handleUnknownRequest(Request const& req) const;
 
-		std::string					serverName_;
-		std::string					host_;
-		int							port_;
+		std::string				serverName_;
+		std::string				host_;
+		int						port_;
 
-		sockaddr_in					sockaddr_;
-		int							socketFd_;
+		sockaddr_in				sockaddr_;
+		int						socketFd_;
 
-		std::map<std::string, Location*>	locationsMap_;
+		std::map<std::string,
+			Location*>			locationsMap_;
 };
 
 int	stringIpToInt(std::string const& ip);

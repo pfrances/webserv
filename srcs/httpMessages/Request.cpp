@@ -6,17 +6,19 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:45 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/28 19:03:38 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/29 18:14:46 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Request.hpp"
+#include <iostream>
 #include <sstream>
 
 Request::Request(void) :	HttpMessage(),
 							method_(""),
 							uri_(""),
 							query_(),
+							uriWithQuery_(""),
 							httpVersion_(""),
 							clientSocket_(-1) {
 
@@ -26,6 +28,7 @@ Request::Request(std::string const& rawRequest, int clientSocket) :	HttpMessage(
 																	method_(""),
 																	uri_(""),
 																	query_(),
+																	uriWithQuery_(""),
 																	httpVersion_(""),
 																	clientSocket_(clientSocket) {
 	parseStartLine();
@@ -35,6 +38,7 @@ Request::Request(Request const& other) :	HttpMessage(other),
 											method_(other.method_),
 											uri_(other.uri_),
 											query_(other.query_),
+											uriWithQuery_(other.uriWithQuery_),
 											httpVersion_(other.httpVersion_),
 											clientSocket_(other.clientSocket_) {
 
@@ -46,6 +50,7 @@ Request &Request::operator=(Request const& other) {
 		this->method_ = other.method_;
 		this->uri_ = other.uri_;
 		this->query_ = other.query_;
+		this->uriWithQuery_ = other.uriWithQuery_;
 		this->httpVersion_ = other.httpVersion_;
 		this->clientSocket_ = other.clientSocket_;
 	}
@@ -64,8 +69,28 @@ std::string const&	Request::getUri(void) const {
 	return (this->uri_);
 }
 
+std::string const& Request::getUriWithQuery(void) const {
+	return (this->uriWithQuery_);
+}
+
 std::string const&	Request::getHttpVersion(void) const {
 	return (this->httpVersion_);
+}
+
+bool	Request::isMethodValid(void) const {
+	return (this->method_ == "GET" || this->method_ == "POST" || this->method_ == "DELETE");
+}
+
+bool	Request::isUriValid(void) const {
+	return (this->uri_.size() > 0);
+}
+
+bool	Request::isHttpVersionValid(void) const {
+	return (this->httpVersion_ == "HTTP/1.1");
+}
+
+bool	Request::isRequestValid(void) const {
+	return (this->isMethodValid() && this->isUriValid() && this->isHttpVersionValid());
 }
 
 void	Request::setMethod(std::string const& method) {
@@ -109,7 +134,6 @@ void	Request::setHttpVersion(std::string const& httpVersion) {
 }
 
 void	Request::parseStartLine(void) {
-
 	std::istringstream iss(this->getStartLine());
 	std::string tmp;
 
@@ -117,6 +141,7 @@ void	Request::parseStartLine(void) {
 	this->setMethod(tmp);
 
 	std::getline(iss, tmp, ' ');
+	this->uriWithQuery_ = tmp;
 	if (tmp.find('?') != std::string::npos) {
 		this->setUri(tmp.substr(0, tmp.find('?')));
 		this->setQuery(tmp.substr(tmp.find('?') + 1));
@@ -130,5 +155,5 @@ void	Request::parseStartLine(void) {
 }
 
 void	Request::updateStartLine(void) {
-	this->setStartLine(this->method_ + " " + this->uri_ + " " + this->httpVersion_);
+	this->setStartLine(this->method_ + " " + this->uriWithQuery_ + " " + this->httpVersion_);
 }

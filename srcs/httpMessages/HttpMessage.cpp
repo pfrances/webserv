@@ -6,11 +6,13 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 12:27:17 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/21 14:41:57 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/29 18:13:38 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpMessage.hpp"
+#include "ParseTools.hpp"
+#include "MimeTypes.hpp"
 #include <sstream>
 
 HttpMessage::HttpMessage(void) :	rawMessage_(""),
@@ -98,6 +100,7 @@ void	HttpMessage::setHeadersMap(std::map<std::string, std::string> const& header
 
 void	HttpMessage::setBody(std::string const& body) {
 	this->body_ = body;
+	this->setSingleHeader("Content-Length", ParseTools::intToString(body.length()));
 	this->updateRawMessage();
 }
 
@@ -106,11 +109,18 @@ void	HttpMessage::setRawMessage(std::string const& rawMessage) {
 	parseRawMessage();
 }
 
+void	HttpMessage::setMimeByExtension(std::string const& ext) {
+	this->setSingleHeader("Content-Type", MimeTypes::getMimeType(ext));
+}
+
+
 /****************************Parsers****************************/
 void	HttpMessage::parseRawMessage() {
 
 	std::istringstream iss(this->rawMessage_);
-	std::getline(iss, this->startLine_);
+	std::string startLine;
+	std::getline(iss, startLine);
+	this->startLine_ = startLine.substr(0, startLine.find("\r"));
 	// the startLine_ has to be parsed on the child class
 
 	std::string header;

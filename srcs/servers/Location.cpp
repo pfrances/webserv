@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:23:49 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/24 13:38:08 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/01 19:50:58 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,46 +17,43 @@
 #include <limits>
 #include <iostream>
 
-Location::Location(void) :	path_(""),
-							root_(""),
+Location::Location(void) :	path_("/"),
+							root_("./webserPages"),
 							index_(std::vector<std::string>()),
-							tryFiles_(std::vector<std::string>()),
 							errorPages_(std::map<int, std::string>()),
 							redirect_(std::map<std::string, std::string>()),
 							allowedMethods_(std::vector<std::string>()),
-							cgiPath_(std::vector<std::string>()),
-							cgiExtension_(std::vector<std::string>()),
-							clientMaxBodySize_(0),
-							directoryListing_(false) {
-
+							cgiPaths_(std::vector<std::string>()),
+							cgiExtensions_(std::vector<std::string>()),
+							clientMaxBodySize_(1024),
+							autoIndex_(false) {
+	allowedMethods_.push_back("GET");
 }
 
 Location::Location(std::string const& locationConf,
 					std::string const& path) :	path_(path),
 												root_(""),
 												index_(std::vector<std::string>()),
-												tryFiles_(std::vector<std::string>()),
 												errorPages_(std::map<int, std::string>()),
 												redirect_(std::map<std::string, std::string>()),
 												allowedMethods_(std::vector<std::string>()),
-												cgiPath_(std::vector<std::string>()),
-												cgiExtension_(std::vector<std::string>()),
+												cgiPaths_(std::vector<std::string>()),
+												cgiExtensions_(std::vector<std::string>()),
 												clientMaxBodySize_(0),
-												directoryListing_(false) {
+												autoIndex_(false) {
 	this->parseLocationConf(locationConf);
 }
 
 Location::Location(Location const& other) :	path_(other.path_),
 											root_(other.root_),
 											index_(other.index_),
-											tryFiles_(other.tryFiles_),
 											errorPages_(other.errorPages_),
 											redirect_(other.redirect_),
 											allowedMethods_(other.allowedMethods_),
-											cgiPath_(other.cgiPath_),
-											cgiExtension_(other.cgiExtension_),
+											cgiPaths_(other.cgiPaths_),
+											cgiExtensions_(other.cgiExtensions_),
 											clientMaxBodySize_(other.clientMaxBodySize_),
-											directoryListing_(other.directoryListing_) {
+											autoIndex_(other.autoIndex_) {
 
 }
 
@@ -65,14 +62,13 @@ Location &Location::operator=(Location const& other) {
 		this->path_ = other.path_;
 		this->root_ = other.root_;
 		this->index_ = other.index_;
-		this->tryFiles_ = other.tryFiles_;
 		this->errorPages_ = other.errorPages_;
 		this->redirect_ = other.redirect_;
 		this->allowedMethods_ = other.allowedMethods_;
-		this->cgiPath_ = other.cgiPath_;
-		this->cgiExtension_ = other.cgiExtension_;
+		this->cgiPaths_ = other.cgiPaths_;
+		this->cgiExtensions_ = other.cgiExtensions_;
 		this->clientMaxBodySize_ = other.clientMaxBodySize_;
-		this->directoryListing_ = other.directoryListing_;
+		this->autoIndex_ = other.autoIndex_;
 	}
 	return (*this);
 }
@@ -97,10 +93,6 @@ std::vector<std::string> const& Location::getIndex(void) const {
 	return (this->index_);
 }
 
-std::vector<std::string> const& Location::getTryFiles(void) const {
-	return (this->tryFiles_);
-}
-
 std::map<int, std::string> const& Location::getErrorPages(void) const {
 	return (this->errorPages_);
 }
@@ -114,19 +106,52 @@ std::vector<std::string> const& Location::getAllowedMethods(void) const {
 }
 
 std::vector<std::string> const& Location::getCgiPath(void) const {
-	return (this->cgiPath_);
+	return (this->cgiPaths_);
 }
 
-std::vector<std::string> const& Location::getCgiExtension(void) const {
-	return (this->cgiExtension_);
+std::vector<std::string> const& Location::getCgiExtensions(void) const {
+	return (this->cgiExtensions_);
 }
 
 size_t Location::getClientMaxBodySize(void) const {
 	return (this->clientMaxBodySize_);
 }
 
-bool Location::getDirectoryListing(void) const {
-	return (this->directoryListing_);
+bool Location::getAutoIndex(void) const {
+	return (this->autoIndex_);
+}
+
+bool	Location::isGetAllowed(void) const {
+	std::vector<std::string>::const_iterator it = this->getAllowedMethods().begin();
+	std::vector<std::string>::const_iterator ite = this->getAllowedMethods().end();
+	for (; it != ite; it++) {
+		if (*it == "GET") {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool	Location::isPostAllowed(void) const {
+	std::vector<std::string>::const_iterator it = this->getAllowedMethods().begin();
+	std::vector<std::string>::const_iterator ite = this->getAllowedMethods().end();
+	for (; it != ite; it++) {
+		if (*it == "POST") {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool	Location::isDeleteAllowed(void) const {
+	std::vector<std::string>::const_iterator it = this->getAllowedMethods().begin();
+	std::vector<std::string>::const_iterator ite = this->getAllowedMethods().end();
+	for (; it != ite; it++) {
+		if (*it == "DELETE") {
+			return true;
+		}
+	}
+	return false;
 }
 
 void Location::setPath(std::string const& path) {
@@ -134,7 +159,10 @@ void Location::setPath(std::string const& path) {
 }
 
 void Location::setRoot(std::string const& root) {
-	this->root_ = root;
+	if (*(root.end()) == '/')
+		this->root_ = root.substr(0, root.size() - 1);
+	else
+		this->root_ = root;
 }
 
 void Location::setUploadPath(std::string const& uploadPath) {
@@ -147,14 +175,6 @@ void Location::setIndex(std::vector<std::string> const& index) {
 
 void Location::addIndex(std::string const& index) {
 	this->index_.push_back(index);
-}
-
-void Location::setTryFiles(std::vector<std::string> const& tryFiles) {
-	this->tryFiles_ = tryFiles;
-}
-
-void Location::addTryFiles(std::string const& tryFiles) {
-	this->tryFiles_.push_back(tryFiles);
 }
 
 void Location::setErrorPages(std::map<int, std::string> const& errorPages) {
@@ -199,19 +219,19 @@ void Location::addAllowedMethods(std::string const& allowedMethods) {
 }
 
 void Location::setCgiPath(std::vector<std::string> const& cgiPath) {
-	this->cgiPath_ = cgiPath;
+	this->cgiPaths_ = cgiPath;
 }
 
 void Location::addCgiPath(std::string const& cgiPath) {
-	this->cgiPath_.push_back(cgiPath);
+	this->cgiPaths_.push_back(cgiPath);
 }
 
 void Location::setCgiExtension(std::vector<std::string> const& cgiExtension) {
-	this->cgiExtension_ = cgiExtension;
+	this->cgiExtensions_ = cgiExtension;
 }
 
 void Location::addCgiExtension(std::string const& cgiExtension) {
-	this->cgiExtension_.push_back(cgiExtension);
+	this->cgiExtensions_.push_back(cgiExtension);
 }
 
 void Location::setClientMaxBodySize(size_t clientMaxBodySize) {
@@ -272,8 +292,8 @@ void Location::setClientMaxBodySize(std::string const& clientMaxBodySize) {
 	}
 }
 
-void Location::setDirectoryListing(bool directoryListing) {
-	this->directoryListing_ = directoryListing;
+void Location::setAutoIndex(bool autoIndex) {
+	this->autoIndex_ = autoIndex;
 }
 
 void Location::parseLocationConf(std::string const& locationBlock) {
@@ -291,9 +311,6 @@ void Location::parseLocationConf(std::string const& locationBlock) {
 		} else if (token == "index") {
 			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
 			this->setIndex(tokensVector);
-		} else if (token == "try_files") {
-			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
-			this->setTryFiles(tokensVector);
 		} else if (token == "error_page") {
 			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
 			this->parseAndAddErrorPages(tokensVector);
@@ -327,17 +344,17 @@ void Location::parseLocationConf(std::string const& locationBlock) {
 		} else if (token == "execute_cgi") {
 			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
 			this->setCgiExtension(tokensVector);
-		} else if (token == "directory_listing") {
+		} else if (token == "autoindex") {
 			token = ParseTools::getNextToken(locationBlock, it);
 			if (token == "on") {
-				this->setDirectoryListing(true);
+				this->setAutoIndex(true);
 			} else if (token == "off") {
-				this->setDirectoryListing(false);
+				this->setAutoIndex(false);
 			} else {
-				throw std::runtime_error("Location [" + this->path_ + "]: directory_listing: invalid argument.");
+				throw std::runtime_error("Location [" + this->path_ + "]: autoindex: invalid argument.");
 			}
 			if (ParseTools::getNextToken(locationBlock, it) != ";") {
-				throw std::runtime_error("Location [" + this->path_ + "]: directory_listing: no semicolon.");
+				throw std::runtime_error("Location [" + this->path_ + "]: autoindex: no semicolon.");
 			}
 		} else {
 			throw std::runtime_error("Location [" + this->path_ + "]: unknown directive: '" + token + "'.");
@@ -353,23 +370,20 @@ void	Location::applyDefaultValues(Location const& defaultLocation) {
 	if (this->index_.empty()) {
 		this->index_ = defaultLocation.index_;
 	}
-	if (this->tryFiles_.empty()) {
-		this->tryFiles_ = defaultLocation.tryFiles_;
-	}
 	if (this->errorPages_.empty()) {
 		this->errorPages_ = defaultLocation.errorPages_;
 	}
 	if (this->redirect_.empty()) {
 		this->redirect_ = defaultLocation.redirect_;
 	}
-	if (this->allowedMethods_.empty()) {
+	if (this->allowedMethods_.size() == 1 && this->allowedMethods_.front() == "GET") {
 		this->allowedMethods_ = defaultLocation.allowedMethods_;
 	}
-	if (this->cgiPath_.empty()) {
-		this->cgiPath_ = defaultLocation.cgiPath_;
+	if (this->cgiPaths_.empty()) {
+		this->cgiPaths_ = defaultLocation.cgiPaths_;
 	}
-	if (this->cgiExtension_.empty()) {
-		this->cgiExtension_ = defaultLocation.cgiExtension_;
+	if (this->cgiExtensions_.empty()) {
+		this->cgiExtensions_ = defaultLocation.cgiExtensions_;
 	}
 	if (this->clientMaxBodySize_ == 0) {
 		this->clientMaxBodySize_ = defaultLocation.clientMaxBodySize_;
@@ -377,7 +391,7 @@ void	Location::applyDefaultValues(Location const& defaultLocation) {
 	if (this->uploadPath_.empty()) {
 		this->uploadPath_ = defaultLocation.uploadPath_;
 	}
-	if (this->directoryListing_ == false) {
-		this->directoryListing_ = defaultLocation.directoryListing_;
+	if (this->autoIndex_ == false) {
+		this->autoIndex_ = defaultLocation.autoIndex_;
 	}
 }

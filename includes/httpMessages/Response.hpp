@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:20:20 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/28 14:33:19 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/29 13:13:16 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,9 @@ class Response : public HttpMessage {
 		std::string const&	getHttpVersion(void) const;
 
 		void				setStatusCode(std::string const& statusCode);
+		void				setStatusCode(int statusCode);
 		void				setStatusMessage(std::string const& statusMessage);
+		void				setStatusMessageFromCode(int statusCode);
 		void				setHttpVersion(std::string const& httpVersion);
 
 	private:

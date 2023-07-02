@@ -6,17 +6,18 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:21 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/21 14:41:22 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/30 19:15:20 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Response.hpp"
+#include "ParseTools.hpp"
 #include <sstream>
 
 Response::Response(void) :	HttpMessage(),
 							statusCode_(""),
 							statusMessage_(""),
-							httpVersion_("") {
+							httpVersion_("HTTP/1.1") {
 
 }
 
@@ -62,8 +63,79 @@ std::string const&	Response::getHttpVersion(void) const {
 
 void	Response::setStatusCode(std::string const& statusCode) {
 	this->statusCode_ = statusCode;
+	setStatusMessageFromCode(ParseTools::stringToInt(statusCode));
 	this->updateStartLine();
 	this->updateRawMessage();
+}
+
+void	Response::setStatusCode(int statusCode) {
+	this->statusCode_ = ParseTools::intToString(statusCode);
+	setStatusMessageFromCode(statusCode);
+	this->updateStartLine();
+	this->updateRawMessage();
+}
+
+void	Response::setStatusMessageFromCode(int statusCode) {
+
+	if (statusCode == 100) {
+		this->statusMessage_ = "Continue";
+	} else if (statusCode == 101) {
+		this->statusMessage_ = "Switching Protocols";
+	} else if (statusCode == 102) {
+		this->statusMessage_ = "Processing";
+	} else if (statusCode == 200) {
+		this->statusMessage_ = "OK";
+	} else if (statusCode == 201) {
+		this->statusMessage_ = "Created";
+	} else if (statusCode == 202) {
+		this->statusMessage_ = "Accepted";
+	} else if (statusCode == 204) {
+		this->statusMessage_ = "No Content";
+	} else if (statusCode == 206) {
+		this->statusMessage_ = "Partial Content";
+	} else if (statusCode == 300) {
+		this->statusMessage_ = "Multiple Choices";
+	} else if (statusCode == 301) {
+		this->statusMessage_ = "Moved Permanently";
+	} else if (statusCode == 302) {
+		this->statusMessage_ = "Found";
+	} else if (statusCode == 304) {
+		this->statusMessage_ = "Not Modified";
+	} else if (statusCode == 307) {
+		this->statusMessage_ = "Temporary Redirect";
+	} else if (statusCode == 308) {
+		this->statusMessage_ = "Permanent Redirect";
+	} else if (statusCode == 400) {
+		this->statusMessage_ = "Bad Request";
+	} else if (statusCode == 401) {
+		this->statusMessage_ = "Unauthorized";
+	} else if (statusCode == 403) {
+		this->statusMessage_ = "Forbidden";
+	} else if (statusCode == 404) {
+		this->statusMessage_ = "Not Found";
+	} else if (statusCode == 405) {
+		this->statusMessage_ = "Method Not Allowed";
+	} else if (statusCode == 409) {
+		this->statusMessage_ = "Conflict";
+	} else if (statusCode == 410) {
+		this->statusMessage_ = "Gone";
+	} else if (statusCode == 429) {
+		this->statusMessage_ = "Too Many Requests";
+	} else if (statusCode == 500) {
+		this->statusMessage_ = "Internal Server Error";
+	} else if (statusCode == 501) {
+		this->statusMessage_ = "Not Implemented";
+	} else if (statusCode == 502) {
+		this->statusMessage_ = "Bad Gateway";
+	} else if (statusCode == 503) {
+		this->statusMessage_ = "Service Unavailable";
+	} else if (statusCode == 504) {
+		this->statusMessage_ = "Gateway Timeout";
+	} else if (statusCode == 505) {
+		this->statusMessage_ = "HTTP Version Not Supported";
+	} else {
+		this->statusMessage_ = "Unknow";
+	}
 }
 
 void	Response::setStatusMessage(std::string const& statusMessage) {

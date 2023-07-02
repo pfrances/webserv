@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/28 18:35:45 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/02 13:03:09 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,8 +30,13 @@ ServerMonitor::ServerMonitor(std::string const& confFileName) :	serversMap_(),
 	File				confFile(confFileName);
 	std::string const&	conf = confFile.getFileContent();
 
-	std::string::const_iterator	it = conf.begin();
+	pollfd pollfd;
+	pollfd.fd = STDIN_FILENO;
+	pollfd.events = POLLIN;
+	pollfd.revents = 0;
+	this->pollfdsVec_.push_back(pollfd);
 
+	std::string::const_iterator	it = conf.begin();
 	std::string token = ParseTools::getNextToken(conf, it);
 	while (token.empty() == false)
 	{
@@ -39,7 +44,6 @@ ServerMonitor::ServerMonitor(std::string const& confFileName) :	serversMap_(),
 			std::string serverBlock = ParseTools::extractBlock(conf, it);
 			Server *server = new Server(serverBlock);
 
-			pollfd pollfd;
 			pollfd.fd = server->getSocketFd();
 			pollfd.events = POLLIN;
 			pollfd.revents = 0;
@@ -58,7 +62,9 @@ ServerMonitor::~ServerMonitor(void) {
 	std::vector<pollfd>::iterator itPoll = pollfdsVec_.begin();
 	std::vector<pollfd>::iterator itePoll = pollfdsVec_.end();
 	for (; itPoll != itePoll; itPoll++){
-		close(itPoll->fd);
+		if (itPoll->fd != STDIN_FILENO) {
+			close(itPoll->fd);
+		}
 	}
 
 	std::map<int, Server*>::iterator itServ = serversMap_.begin();
@@ -104,13 +110,18 @@ void	ServerMonitor::handleNewConnection(int fd) {
 	int clientfd = this->serversMap_[fd]->acceptNewClient();
 	if (fd < 0) {
 		throw std::runtime_error("accept error");
-	} else {
-		this->pollfdsVec_.push_back(pollfd());
-		this->pollfdsVec_.back().fd = clientfd;
-		this->pollfdsVec_.back().events = POLLIN;
-		this->pollfdsVec_.back().revents = 0;
-		this->clientsMap_.insert(std::pair<int, Server*>(clientfd, this->serversMap_[fd]));
 	}
+
+	int enable = 1;
+	if (setsockopt(clientfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+		throw std::runtime_error("setsockopt(SO_REUSEADDR) failed");
+	}
+
+	this->pollfdsVec_.push_back(pollfd());
+	this->pollfdsVec_.back().fd = clientfd;
+	this->pollfdsVec_.back().events = POLLIN;
+	this->pollfdsVec_.back().revents = 0;
+	this->clientsMap_.insert(std::pair<int, Server*>(clientfd, this->serversMap_[fd]));
 }
 
 int	ServerMonitor::getPollfdsVecIndxFromFd(int fd) const {
@@ -122,6 +133,14 @@ int	ServerMonitor::getPollfdsVecIndxFromFd(int fd) const {
 		}
 	}
 	return (-1);
+}
+
+void	ServerMonitor::handleUserInput(void) {
+	std::string msg;
+	std::getline(std::cin, msg);
+	if (msg == "exit") {
+		throw std::runtime_error("Shutting down...");
+	}
 }
 
 void	ServerMonitor::handleClientRequest(pollfd& pollfd) {
@@ -139,12 +158,10 @@ void	ServerMonitor::handleClientRequest(pollfd& pollfd) {
 			pollfd.events |= POLLOUT;
 		}
 	} catch (std::exception& e) {
-		std::cerr << e.what() << std::endl;
 		this->pollfdsVec_.erase(this->pollfdsVec_.begin() + this->getPollfdsVecIndxFromFd(fd));
 		this->clientsMap_.erase(fd);
 		close(fd);
 	}
-
 }
 
 void	ServerMonitor::handleResponseToSend(pollfd& pollfd) {
@@ -173,14 +190,13 @@ void	ServerMonitor::run(void) {
 		std::vector<pollfd>::iterator ite = pollfdsVec_.end();
 		for (; it != ite; it++) {
 			if (it->revents & POLLIN) {
-				if (this->serversMap_.find(it->fd) != this->serversMap_.end()) {
+				if (it->fd == STDIN_FILENO) {
+					this->handleUserInput();
+				} else if (this->serversMap_.find(it->fd) != this->serversMap_.end()) {
 					this->handleNewConnection(it->fd);
 				} else if (this->clientsMap_.find(it->fd) != this->clientsMap_.end()) {
 					this->handleClientRequest(*it);
 				}
-				// else if (this->cgiMap_.find(it->fd) != this->cgiMap_.end()) {
-				// 	this->handleCgiResponse(it->fd);
-				// }
 			}
 			if (it->revents & POLLOUT) {
 				if (this->clientsMap_.find(it->fd) != this->clientsMap_.end()) {

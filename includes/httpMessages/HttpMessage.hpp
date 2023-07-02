@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 12:09:28 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/21 13:20:10 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/29 12:44:43 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,6 +48,8 @@ class HttpMessage
 		bool							hasHeaderEntry(std::string const& key) const;
 		bool							hasBody(void) const;
 		bool							hasRawMessage(void) const;
+
+		void							setMimeByExtension(std::string const& extension);
 
 	protected:
 		std::string						rawMessage_;

@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 15:00:29 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/28 15:59:48 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/01 19:24:15 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,7 @@
 # include <map>
 # include <poll.h>
 
+class CgiHandler;
 class Response;
 class Server;
 
@@ -42,16 +43,19 @@ class ServerMonitor
 	private:
 		std::map<int, Server*>		serversMap_;
 		std::map<int, Server*>		clientsMap_;
+		std::map<int, CgiHandler*>	cgiHandlersMap_;
 		std::map<int, Response*>	responsesMap_;
 		std::vector<pollfd>			pollfdsVec_;
 
 		void						setServersStartListen(void) const;
 
+		void						handleUserInput(void);
 		void						handleNewConnection(int fd);
 		void						handleClientRequest(pollfd& pollfd);
 		void						handleResponseToSend(pollfd& pollfd);
+		void						handleCgiResponse(pollfd& pollfd);
 
-		std::string 				recvMsg(int fd) const;
+		std::string					recvMsg(int fd) const;
 		void						sendMsg(int fd, std::string const& msg) const;
 
 		int							getPollfdsVecIndxFromFd(int fd) const;
