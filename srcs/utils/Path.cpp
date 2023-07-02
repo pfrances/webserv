@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/20 11:32:05 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/20 12:30:09 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/30 11:22:40 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,7 +112,11 @@ std::string	Path::getPathTo(std::string const& path) const {
 	return (result);
 }
 
-void	Path::setPath(std::string const& path) {
+void	Path::setPath(std::string const& pathToSet) {
+	std::string path = pathToSet;
+	while (path.find("//") != std::string::npos) {
+		path.replace(path.find("//"), 2, "/");
+	}
 	std::string	absolutePath;
 	std::string	relativePath;
 	std::list<std::string>	absolutePathList;

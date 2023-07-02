@@ -6,13 +6,13 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 17:58:48 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/24 13:10:56 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/29 12:35:16 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ParseTools.hpp"
 #include <stdexcept>
-#include <iostream>
+#include <sstream>
 
 std::string ParseTools::extractBlock(std::string const& conf, std::string::const_iterator& it) {
 	std::string::const_iterator	ite = conf.end();
@@ -93,4 +93,20 @@ std::string	ParseTools::getNextToken(std::string const& str,
 		}
 	}
 	return std::string();
+}
+
+std::string	ParseTools::intToString(int nb) {
+	std::stringstream	ss;
+
+	ss << nb;
+	return ss.str();
+}
+
+int	ParseTools::stringToInt(std::string const& str) {
+	std::istringstream iss(str);
+	int value = 0;
+	if (!(iss >> value)) {
+		throw std::runtime_error("Failed to convert string to int");
+	}
+	return value;
 }

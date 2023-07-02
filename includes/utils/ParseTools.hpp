@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 17:53:49 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/24 13:06:15 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/06/29 12:35:16 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,8 +26,8 @@ class ParseTools {
 													std::string::const_iterator& it);
 		static std::string				extractBlock(std::string const& conf,
 													std::string::const_iterator& it);
-
-private:
+		static std::string				intToString(int nb);
+		static int						stringToInt(std::string const& str);
 };
 
 #endif

@@ -36,8 +36,14 @@ Server::Server(std::string const& serverConf) :	serverName_("default"),
 	if (this->socketFd_ < 0)
 		throw std::runtime_error("socket error");
 
-	if (bind(this->socketFd_, (struct sockaddr *)&sockaddr_, sizeof(sockaddr_)) < 0)
+	int enable = 1;
+	if (setsockopt(this->socketFd_, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+		throw std::runtime_error("setsockopt(SO_REUSEADDR) failed");
+	}
+
+	if (bind(this->socketFd_, (struct sockaddr *)&sockaddr_, sizeof(sockaddr_)) < 0) {
 		throw std::runtime_error("bind error");
+	}
 }
 
 Server::~Server(void) {
@@ -147,6 +153,18 @@ void	Server::parseServerConf(std::string const& serverConf) {
 			if (ParseTools::getNextToken(serverConf, it) != ";") {
 				throw std::runtime_error("Server::Server: root: no semicolon.");
 			}
+		} else if (token == "autoindex") {
+				token = ParseTools::getNextToken(serverConf, it);
+			if (token == "on") {
+				defaultLocation.setAutoIndex(true);
+			} else if (token == "off") {
+				defaultLocation.setAutoIndex(false);
+			} else {
+				throw std::runtime_error("Server: autoindex: invalid argument.");
+			}
+			if (ParseTools::getNextToken(serverConf, it) != ";") {
+				throw std::runtime_error("Location: autoindex: no semicolon.");
+			}
 		} else {
 			throw std::runtime_error("Server::Server: unknown token -->'" + token + "'.");
 		}
@@ -155,10 +173,76 @@ void	Server::parseServerConf(std::string const& serverConf) {
 
 	std::map<std::string, Location*>::iterator itLoc = this->locationsMap_.begin();
 	std::map<std::string, Location*>::iterator iteLoc = this->locationsMap_.end();
-	for (; itLoc != iteLoc; itLoc++) {
-		Location* location = itLoc->second;
-		location->applyDefaultValues(defaultLocation);
+	if (itLoc == iteLoc) {
+		this->addLocation(new Location(defaultLocation));
+	} else {
+		for (; itLoc != iteLoc; itLoc++) {
+			Location* location = itLoc->second;
+			location->applyDefaultValues(defaultLocation);
+		}
 	}
+}
+
+Response*	Server::handleError(int statusCode, Location *location) const {
+	std::map<int, std::string> const& errorPagesMap = location->getErrorPages();
+	Response *res = new Response();
+
+	if (errorPagesMap.find(statusCode) != errorPagesMap.end()) {
+		File file(errorPagesMap.find(statusCode)->second);
+		res->setStatusCode(statusCode);
+		res->setMimeByExtension(file.getExtension());
+		res->setBody(file.getFileContent());
+	} else {
+		res->setStatusCode(500);
+		res->setSingleHeader("Content-Type", "text/plain");
+		res->setBody("Internal Server Error");
+	}
+	return res;
+}
+
+std::string	Server::setFileListHtmlToReqBody(std::map<std::string, std::string> const& filesList,
+										Request const& req) const {
+
+	std::string fileListHTML = "<!DOCTYPE html><html>\n<head>\n<title>"
+								+ req.getUri()
+								+ " File Listing</title>\n</head>\n<body>\n<table>\n";
+
+	std::map<std::string, std::string>::const_iterator it = filesList.begin();
+	std::map<std::string, std::string>::const_iterator ite = filesList.end();
+	for (; it != ite; it++) {
+		if (it->first == "../" && req.getUri() == "/") {
+			continue;
+		}
+		fileListHTML += "<tr><td><a href=\"" + it->first + "\">" + it->first
+						+ "</a></td> <td>&emsp;&emsp;(" + it->second + " bytes)</td></tr>\n";
+	}
+	fileListHTML += "</table>\n</body>\n</html>\n";
+	return fileListHTML;
+}
+
+Response*	Server::handleIndexing(File const& file, Request const& req, Location *location) const {
+
+	std::vector<std::string>::const_iterator it = location->getIndex().begin();
+	std::vector<std::string>::const_iterator ite = location->getIndex().end();
+	for (; it != ite; it++) {
+		File index(file.getFullPath() + "/" + *it);
+		if (index.isReadable()) {
+			std::string const& indexContent = index.getFileContent();
+			Response *res = new Response();
+			res->setStatusCode(200);
+			res->setMimeByExtension(index.getExtension());
+			res->setBody(indexContent);
+			return res;
+		}
+	}
+
+	if (location->getAutoIndex()) {
+		Response *res = new Response();
+		res->setStatusCode(200);
+		res->setBody(setFileListHtmlToReqBody(file.getFilesListing(), req));
+		return res;
+	}
+	return handleError(404, location);
 }
 
 Response*	Server::handleGetRequest(Request const& req) const {
@@ -169,24 +253,27 @@ Response*	Server::handleGetRequest(Request const& req) const {
 	}
 
 	std::string const& path = location->getRoot() + req.getUri();
-	std::cout << "path = " << path << std::endl;
+
 	File file(path);
-	std::string const& fileContent = file.getFileContent();
-	std::ostringstream oss;
-	oss << fileContent.length();
-	std::cout << "fileContent = " << fileContent << std::endl;
-	std::cout << "fileContent.length() = " << fileContent.length() << std::endl;
-	std::cout << req.getRawMessage() << std::endl;
-	Response *res = new Response();
-	res->setStartLine("HTTP/1.1 200 OK");
-	if (file.getExtension() == "html") {
-		res->setSingleHeader("Content-Type", "text/html");
-	} else if (file.getExtension() == "jpg") {
-		res->setSingleHeader("Content-Type", "image/jpeg");
+	if (file.exists() == false) {
+		return this->handleError(404, location);
 	}
-	res->setSingleHeader("Content-Length", oss.str());
-	res->setBody(fileContent);
-	return res;
+
+
+	try {
+		if (file.isDirectory() == true) {
+			return this->handleIndexing(file, req, location);
+		}
+
+		std::string const& fileContent = file.getFileContent();
+		Response *res = new Response();
+		res->setMimeByExtension(file.getExtension());
+		res->setBody(fileContent);
+		res->setStatusCode(200);
+		return res;
+	} catch (std::exception& e) {
+		return handleError(404, location);
+	}
 }
 
 Response*	Server::handlePostRequest(Request const& req) const {
@@ -205,6 +292,12 @@ Response*	Server::handleUnknownRequest(Request const& req) const {
 }
 
 Response*	Server::handleClientRequest(Request const& req) const {
+
+	std::cout << req.getStartLine() << std::endl;
+	if (req.isRequestValid() == false) {
+		return this->handleError(400, this->locationsMap_.find("/")->second);
+	}
+
 	std::string const& method = req.getMethod();
 	if (method == "GET") {
 		return this->handleGetRequest(req);
@@ -213,7 +306,7 @@ Response*	Server::handleClientRequest(Request const& req) const {
 	} else if (method == "DELETE") {
 		return this->handleDeleteRequest(req);
 	}
-	return this->handleUnknownRequest(req);
+	return this->handleError(501, this->locationsMap_.find("/")->second);
 }
 
 Location*	Server::getCorrespondingLocation(std::string const& uri) const {

@@ -1,38 +1,33 @@
 server {
-	listen 8080;         # Port number to listen on
-	server_name example.com;    # Server name
+	listen 8080;
+	server_name webserv;
 
-	error_page 404 /errors/404.html;    # Default error page for 404 Not Found
-
-	client_body_size 10m;    # Limit client body size to 10 megabytes
-		root /tmp;
+	root webservPages;
+	error_page 404 webservPages/errorPages/404.html;
+	autoindex off;
+	client_body_size 10m;
 
 	location / {
-		root /home/pierre/42/rank5/webserver;    # Serve files from this directory for the route '/'
-		index index.html;      # Default file to answer if the request is a directory
-		directory_listing on;  # Enable directory listing
+		autoindex on;
 	}
 
-	location /kapouet {
-		root /tmp/www;    # Serve files from this directory for the route '/kapouet'
-		index index.html;    # Default file to answer if the request is a directory
+	location /upload {
+
 	}
 
-	location /kapouet/abc {
-		root /tmp/html;    # Serve files from this directory for the route '/kapouet'
-		index index.html;    # Default file to answer if the request is a directory
-	}
-
-	location /api {
-		methods GET POST;    # Accept only GET and POST methods
-		redirect /api /new-api;    # Redirect requests from '/api' to '/new-api'
-	}
-
-	location /uploads {
-		upload_path /var/www/uploads;    # Save uploaded files to this directory
-	}
+#	location /post {
+#		methods POST;
+#		alias webservPages/upload;
+#	}
+#
+#	location /delete {
+#		methods DELETE;
+#		alias webservPages/upload;
+#	}
 
 #	location /cgi-bin {
-#		execute_cgi php;    # Execute PHP CGI for files in this directory
+#		methods GET POST DELETE;
+#		cgi_path /usr/bin/python3 /bin/bash;
+#		cgi_ext .py .sh;
 #	}
 }

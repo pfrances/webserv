@@ -6,13 +6,17 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/20 12:30:35 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/23 15:11:28 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/01 10:59:53 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "File.hpp"
+#include "ParseTools.hpp"
 #include <fstream>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <iostream>
 
 File::File(void) :	Path(),
 					fileName_(""),
@@ -72,6 +76,40 @@ std::string const&	File::getFileContent(void) {
 	return (this->fileContent_);
 }
 
+std::map<std::string, std::string>	File::getFilesListing(void) const {
+
+	DIR* dir = opendir(this->getFullPath().c_str());
+	if (dir == NULL) {
+		throw std::runtime_error("Error: could not open directory");
+	}
+
+	std::map<std::string, std::string> FilesList;
+	std::string fileName;
+	std::string fileSize;
+	dirent* entry;
+	while ((entry = readdir(dir)) != NULL) {
+		fileName = entry->d_name;
+		if (entry->d_type == DT_DIR) {
+			fileName += "/";
+		}
+
+		struct stat fileStat;
+		std::string filePath = this->getFullPath() + "/" + fileName;
+		if (stat(filePath.c_str(), &fileStat) == 0) {
+			fileSize = ParseTools::intToString(fileStat.st_size);
+		} else {
+			fileSize = "????";
+		}
+		FilesList.insert(std::pair<std::string, std::string>(fileName, fileSize));
+	}
+	closedir(dir);
+	return FilesList;
+}
+
+size_t	File::getFileSize(void) const {
+	return (this->fileContent_.size());
+}
+
 void	File::setFileName(std::string const& fileName) {
 	this->fileName_ = fileName;
 }
@@ -97,6 +135,22 @@ bool	File::exists(void) const {
 
 	file.close();
 	return (exists);
+}
+
+bool File::isRegularFile() const {
+	struct stat fileStat;
+	if (stat(getFullPath().c_str(), &fileStat) != 0) {
+		return false;
+	}
+	return S_ISREG(fileStat.st_mode);
+}
+
+bool File::isDirectory() const {
+	struct stat fileStat;
+	if (stat(getFullPath().c_str(), &fileStat) != 0) {
+		return false;
+	}
+	return S_ISDIR(fileStat.st_mode);
 }
 
 bool	File::isExecutable(void) const {

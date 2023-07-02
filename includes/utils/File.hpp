@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/20 11:56:13 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/23 15:08:41 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/01 10:20:30 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,8 +14,7 @@
 # define FILE_HPP
 
 # include "Path.hpp"
-
-class Directory;
+# include <map>
 
 class File : public Path
 {
@@ -27,15 +26,17 @@ class File : public Path
 		~File(void);
 
 		bool				exists(void) const;
+		bool				isDirectory(void) const;
+		bool				isRegularFile(void) const;
 		bool				isExecutable(void) const;
 		bool				isReadable(void) const;
 		bool				isWritable(void) const;
 		bool				isHidden(void) const;
-
 		std::string const&	getFileName(void) const;
 		std::string const&	getFileBaseName(void) const;
 		std::string const&	getExtension(void) const;
 		std::string const&	getFileContent(void);
+		size_t				getFileSize(void) const;
 
 		void				setFileName(std::string const& fileName);
 		void				setFileBaseName(std::string const& fileBaseName);
@@ -43,15 +44,12 @@ class File : public Path
 		void				setFileContent(std::string const& content);
 		void				append(std::string const& content);
 
+		std::map<std::string, std::string>	getFilesListing(void) const;
+
 	private:
 		void				read(void);
 		void				write(void);
 		void				parsePath(void);
-
-		// bool				isExecutable_;
-		// bool				isReadable_;
-		// bool				isWritable_;
-		// bool				isHidden_;
 
 		std::string			fileName_;
 		std::string			fileBaseName_;
