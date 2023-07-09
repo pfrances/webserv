@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:23:49 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/01 19:50:58 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/09 14:46:57 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -196,7 +196,7 @@ void Location::parseAndAddErrorPages(std::vector<std::string> const& errorPages)
 		if (error != 400 && error != 401 && error != 403 && error != 404 && error != 405
 			&& error != 409 && error != 410 && error != 413 && error != 429
 			&& error != 500 && error != 501 && error != 505) {
-				throw std::runtime_error("Error: invalid error code");
+				throw ConfigurationException("[Configuration Location] " + this->getPath() + ": invalid error code");
 			}
 		this->addErrorPages(error, pageName);
 	}
@@ -251,7 +251,8 @@ void Location::setClientMaxBodySize(std::string const& clientMaxBodySize) {
 	while (std::isdigit(*it)) {
 		char digit = *it - '0';
 		if ((std::numeric_limits<size_t>::max() - digit) / 10 < size)
-			throw std::runtime_error("Error: client_max_body_size is too big -- overflow");
+			throw ConfigurationException("[Configuration Location] " + this->getPath()
+				+ ": client_body_size is too big");
 		size = size * 10 + digit;
 		++it;
 	}
@@ -278,17 +279,20 @@ void Location::setClientMaxBodySize(std::string const& clientMaxBodySize) {
 		case 'K':
 			this->clientMaxBodySize_ *= 1024;
 			if (this->clientMaxBodySize_ < size)
-				throw std::runtime_error("Error: client_max_body_size is too big -- overflow");
+			throw ConfigurationException("[Configuration Location] " + this->getPath()
+				+ ": client_body_size is too big");
 			break;
 		default:
-			throw std::runtime_error("Error: client_max_body_size is invalid");
+			throw ConfigurationException("[Configuration Location] " + this->getPath()
+				+ ": invalid client_body_size");
 	}
 	it++;
 	while (std::isspace(*it)) {
 		it++;
 	}
 	if (it != ite) {
-		throw std::runtime_error("Error: client_max_body_size is invalid");
+		throw ConfigurationException("[Configuration Location] " + this->getPath()
+			+ ": invalid client_body_size");
 	}
 }
 
@@ -306,7 +310,7 @@ void Location::parseLocationConf(std::string const& locationBlock) {
 			token = ParseTools::getNextToken(locationBlock, it);
 			this->setRoot(token);
 			if (ParseTools::getNextToken(locationBlock, it) != ";") {
-				throw std::runtime_error("Location [" + this->path_ + "]: root: no semicolon.");
+				throw ConfigurationException("Location [" + this->path_ + "]: root: no semicolon.");
 			}
 		} else if (token == "index") {
 			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
@@ -317,29 +321,29 @@ void Location::parseLocationConf(std::string const& locationBlock) {
 		} else if (token == "redirect") {
 			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
 			if (tokensVector.size() != 2) {
-				throw std::runtime_error("Location [" + this->path_ + "]: redirect: invalid number of arguments.");
+				throw ConfigurationException("Location [" + this->path_ + "]: redirect: invalid number of arguments.");
 			}
 			this->addRedirect(tokensVector[0], tokensVector[1]);
-		} else if (token == "methods") {
+		} else if (token == "allow_methods") {
 			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
 			this->setAllowedMethods(tokensVector);
 		} else if (token == "cgi_path") {
 			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
 			this->setCgiPath(tokensVector);
-		} else if (token == "cgi_extension") {
+		} else if (token == "cgi_ext") {
 			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
 			this->setCgiExtension(tokensVector);
 		} else if (token == "client_max_body_size") {
 			token = ParseTools::getNextToken(locationBlock, it);
 			this->setClientMaxBodySize(token);
 			if (ParseTools::getNextToken(locationBlock, it) != ";") {
-				throw std::runtime_error("Location [" + this->path_ + "]: client_max_body_size: no semicolon.");
+				throw ConfigurationException("Location [" + this->path_ + "]: client_max_body_size: no semicolon.");
 			}
 		} else if (token == "upload_path") {
 			token = ParseTools::getNextToken(locationBlock, it);
 			this->setUploadPath(token);
 			if (ParseTools::getNextToken(locationBlock, it) != ";") {
-				throw std::runtime_error("Location [" + this->path_ + "]: upload_path: no semicolon.");
+				throw ConfigurationException("Location [" + this->path_ + "]: upload_path: no semicolon.");
 			}
 		} else if (token == "execute_cgi") {
 			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
@@ -351,13 +355,13 @@ void Location::parseLocationConf(std::string const& locationBlock) {
 			} else if (token == "off") {
 				this->setAutoIndex(false);
 			} else {
-				throw std::runtime_error("Location [" + this->path_ + "]: autoindex: invalid argument.");
+				throw ConfigurationException("Location [" + this->path_ + "]: autoindex: invalid argument.");
 			}
 			if (ParseTools::getNextToken(locationBlock, it) != ";") {
-				throw std::runtime_error("Location [" + this->path_ + "]: autoindex: no semicolon.");
+				throw ConfigurationException("Location [" + this->path_ + "]: autoindex: no semicolon.");
 			}
 		} else {
-			throw std::runtime_error("Location [" + this->path_ + "]: unknown directive: '" + token + "'.");
+			throw ConfigurationException("Location [" + this->path_ + "]: unknown directive: '" + token + "'.");
 		}
 		token = ParseTools::getNextToken(locationBlock, it);
 	}

@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/20 11:56:13 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/01 10:20:30 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/09 12:28:40 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 # define FILE_HPP
 
 # include "Path.hpp"
+# include <stdexcept>
 # include <map>
 
 class File : public Path
@@ -58,5 +59,10 @@ class File : public Path
 };
 
 std::ostream &operator<<(std::ostream &o, File& file);
+
+class OpeningFailed : public std::runtime_error {
+	public:
+		OpeningFailed(std::string const& msg) : std::runtime_error(msg) {}
+};
 
 #endif

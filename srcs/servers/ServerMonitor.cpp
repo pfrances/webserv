@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/02 13:03:09 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/09 21:04:31 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,43 +19,12 @@
 #include <iostream>
 #include <unistd.h>
 
-ServerMonitor::ServerMonitor(void) {
-
-}
-
 ServerMonitor::ServerMonitor(std::string const& confFileName) :	serversMap_(),
 																clientsMap_(),
 																responsesMap_(),
 																pollfdsVec_() {
-	File				confFile(confFileName);
-	std::string const&	conf = confFile.getFileContent();
-
-	pollfd pollfd;
-	pollfd.fd = STDIN_FILENO;
-	pollfd.events = POLLIN;
-	pollfd.revents = 0;
-	this->pollfdsVec_.push_back(pollfd);
-
-	std::string::const_iterator	it = conf.begin();
-	std::string token = ParseTools::getNextToken(conf, it);
-	while (token.empty() == false)
-	{
-		if (token == "server") {
-			std::string serverBlock = ParseTools::extractBlock(conf, it);
-			Server *server = new Server(serverBlock);
-
-			pollfd.fd = server->getSocketFd();
-			pollfd.events = POLLIN;
-			pollfd.revents = 0;
-
-			this->pollfdsVec_.push_back(pollfd);
-			this->serversMap_.insert(std::pair<int, Server*>(pollfd.fd, server));
-		}
-		else {
-			throw std::runtime_error("ParseTools::parseConfFile: Unexpected token: " + token);
-		}
-		token = ParseTools::getNextToken(conf, it);
-	}
+	this->addNewPollfd(STDIN_FILENO, POLLIN);
+	this->parseConfigFile(confFileName);
 }
 
 ServerMonitor::~ServerMonitor(void) {
@@ -97,6 +66,31 @@ ServerMonitor &ServerMonitor::operator=(ServerMonitor const& other) {
 	return (*this);
 }
 
+void	ServerMonitor::parseConfigFile(std::string const& configFileName){
+	File				confFile(configFileName);
+	std::string const&	conf = confFile.getFileContent();
+
+	std::string::const_iterator	it = conf.begin();
+	std::string token = ParseTools::getNextToken(conf, it);
+	while (token.empty() == false)
+	{
+		if (token == "server") {
+			std::string serverBlock = ParseTools::extractBlock(conf, it);
+			Server *server = new Server(serverBlock);
+			int fd = server->getSocketFd();
+
+			this->addNewPollfd(fd, POLLIN);
+			this->serversMap_.insert(std::pair<int, Server*>(fd, server));
+		}
+		else {
+			throw ConfigurationException("[Configuration file] Unexpected token: " + token);
+		}
+		token = ParseTools::getNextToken(conf, it);
+	}
+	if (this->serversMap_.size() == 0)
+		throw ConfigurationException("[Configuration file] No server to configurate");
+}
+
 void	ServerMonitor::setServersStartListen(void) const {
 	std::map<int, Server*>::const_iterator it = serversMap_.begin();
 	std::map<int, Server*>::const_iterator ite = serversMap_.end();
@@ -108,19 +102,16 @@ void	ServerMonitor::setServersStartListen(void) const {
 
 void	ServerMonitor::handleNewConnection(int fd) {
 	int clientfd = this->serversMap_[fd]->acceptNewClient();
-	if (fd < 0) {
-		throw std::runtime_error("accept error");
+	if (clientfd < 0) {
+		return ;
 	}
 
 	int enable = 1;
 	if (setsockopt(clientfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
-		throw std::runtime_error("setsockopt(SO_REUSEADDR) failed");
+		throw IoTroubleException("setsockopt(SO_REUSEADDR) failed");
 	}
 
-	this->pollfdsVec_.push_back(pollfd());
-	this->pollfdsVec_.back().fd = clientfd;
-	this->pollfdsVec_.back().events = POLLIN;
-	this->pollfdsVec_.back().revents = 0;
+	this->addNewPollfd(clientfd, POLLIN);
 	this->clientsMap_.insert(std::pair<int, Server*>(clientfd, this->serversMap_[fd]));
 }
 
@@ -139,41 +130,40 @@ void	ServerMonitor::handleUserInput(void) {
 	std::string msg;
 	std::getline(std::cin, msg);
 	if (msg == "exit") {
-		throw std::runtime_error("Shutting down...");
+		throw ShutdownException("Shutting down...");
 	}
 }
 
-void	ServerMonitor::handleClientRequest(pollfd& pollfd) {
-	int	fd = pollfd.fd;
-	try {
-		std::string msg = this->recvMsg(fd);
-		if (msg.empty()) {
-			return ;
-		}
-		Request req(msg, fd);
+void	ServerMonitor::handleClientRequest(int fd) {
+	std::string msg = this->recvMsg(fd);
+	if (msg.empty()) {
+		return ;
+	}
+
+	std::vector<Request*> resVec = parseMultipleRequest(msg);
+	std::vector<Request*>::iterator it = resVec.begin();
+	std::vector<Request*>::iterator ite = resVec.end();
+	for (; it != ite; it++) {
+		Request *req = *it;
 		Server *server = this->clientsMap_[fd];
-		Response *res = server->handleClientRequest(req);
+		Response *res = server->handleClientRequest(*req);
 		if (res) {
 			this->responsesMap_[fd] = res;
-			pollfd.events |= POLLOUT;
+			this->addEventToPolfd(fd, POLLOUT);
 		}
-	} catch (std::exception& e) {
-		this->pollfdsVec_.erase(this->pollfdsVec_.begin() + this->getPollfdsVecIndxFromFd(fd));
-		this->clientsMap_.erase(fd);
-		close(fd);
+		delete req;
 	}
 }
 
-void	ServerMonitor::handleResponseToSend(pollfd& pollfd) {
+void	ServerMonitor::handleResponseToSend(int fd) {
 
-	int	fd = pollfd.fd;
 	Response *res = this->responsesMap_[fd];
 	if (res) {
 		std::string const& msg = res->getRawMessage();
 		this->sendMsg(fd, msg);
 
 		this->responsesMap_.erase(fd);
-		pollfd.events &= ~POLLOUT;
+		this->RemoveEventToPolfd(fd, POLLOUT);
 		delete res;
 	}
 }
@@ -189,25 +179,35 @@ void	ServerMonitor::run(void) {
 		std::vector<pollfd>::iterator it = pollfdsVec_.begin();
 		std::vector<pollfd>::iterator ite = pollfdsVec_.end();
 		for (; it != ite; it++) {
-			if (it->revents & POLLIN) {
-				if (it->fd == STDIN_FILENO) {
-					this->handleUserInput();
-				} else if (this->serversMap_.find(it->fd) != this->serversMap_.end()) {
-					this->handleNewConnection(it->fd);
-				} else if (this->clientsMap_.find(it->fd) != this->clientsMap_.end()) {
-					this->handleClientRequest(*it);
+			try {
+				if (it->revents & (POLLHUP | POLLERR | POLLNVAL)) {
+					this->closeConnection(it->fd);
+					continue;
 				}
-			}
-			if (it->revents & POLLOUT) {
-				if (this->clientsMap_.find(it->fd) != this->clientsMap_.end()) {
-					this->handleResponseToSend(*it);
+				if (it->revents & POLLIN) {
+					if (it->fd == STDIN_FILENO) {
+						this->handleUserInput();
+					} else if (this->serversMap_.find(it->fd) != this->serversMap_.end()) {
+						this->handleNewConnection(it->fd);
+					} else if (this->clientsMap_.find(it->fd) != this->clientsMap_.end()) {
+						this->handleClientRequest(it->fd);
+					}
 				}
+				if (it->revents & POLLOUT) {
+					if (this->clientsMap_.find(it->fd) != this->clientsMap_.end()) {
+						this->handleResponseToSend(it->fd);
+					}
+				}
+			} catch (IoTroubleException &e) {
+				std::cout << "Close connection [" << it->fd << "]. " << e.what() << std::endl;
+				this->closeConnection(it->fd);
 			}
 		}
+		sleep(1);
 	}
 }
 
-void	ServerMonitor::removePollfd(int fd) {
+void	ServerMonitor::closeConnection(int fd) {
 	std::vector<pollfd>::iterator it = pollfdsVec_.begin();
 	std::vector<pollfd>::iterator ite = pollfdsVec_.end();
 	for (; it != ite; it++) {
@@ -216,6 +216,15 @@ void	ServerMonitor::removePollfd(int fd) {
 			close(fd);
 			break ;
 		}
+	}
+
+	if (this->clientsMap_.find(fd) != this->clientsMap_.end()) {
+		this->clientsMap_.erase(fd);
+	}
+
+	if (this->responsesMap_.find(fd) != this->responsesMap_.end()) {
+		delete this->responsesMap_[fd];
+		this->responsesMap_.erase(fd);
 	}
 }
 
@@ -229,9 +238,7 @@ std::string ServerMonitor::recvMsg(int fd) const {
 		buff[bytesRead] = '\0';
 		msg += buff;
 		if (bytesRead < 0) {
-			throw std::runtime_error("An issue occured while receiving message");
-		} else if (bytesRead == 0) {
-			throw std::runtime_error("End of communication");
+			throw IoTroubleException("An issue occured while receiving message");
 		} else if (bytesRead < BUFFER_SIZE) {
 			break ;
 		}
@@ -243,5 +250,38 @@ void	ServerMonitor::sendMsg(int fd, std::string const& msg) const {
 
 	int BytesSent = send(fd, msg.c_str(), msg.length(), 0);
 	if (BytesSent < 0)
-		throw std::runtime_error("send error");
+		throw IoTroubleException("send error");
+}
+
+void	ServerMonitor::addNewPollfd(int fd, short events) {
+
+	this->pollfdsVec_.push_back(pollfd());
+
+	this->pollfdsVec_.back().fd = fd;
+	this->pollfdsVec_.back().events = events;
+	this->pollfdsVec_.back().revents = 0;
+}
+
+void	ServerMonitor::addEventToPolfd(int fd, short event) {
+	std::vector<pollfd>::iterator it = this->pollfdsVec_.begin();
+	std::vector<pollfd>::iterator ite = this->pollfdsVec_.end();
+
+	for (; it != ite; it++) {
+		if (it->fd == fd) {
+			it->events |= event;
+			break;
+		}
+	}
+}
+
+void	ServerMonitor::RemoveEventToPolfd(int fd, short event) {
+	std::vector<pollfd>::iterator it = this->pollfdsVec_.begin();
+	std::vector<pollfd>::iterator ite = this->pollfdsVec_.end();
+
+	for (; it != ite; it++) {
+		if (it->fd == fd) {
+			it->events &= ~event;
+			break;
+		}
+	}
 }

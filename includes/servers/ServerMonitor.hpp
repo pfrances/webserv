@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 15:00:29 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/01 19:24:15 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/09 14:40:06 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,8 @@
 # include <vector>
 # include <map>
 # include <poll.h>
+# include <stdexcept>
+
 
 class CgiHandler;
 class Response;
@@ -29,7 +31,6 @@ class Server;
 class ServerMonitor
 {
 	public:
-		ServerMonitor(void);
 		ServerMonitor(std::string const& confFileName);
 		ServerMonitor(ServerMonitor const& other);
 		ServerMonitor &operator=(ServerMonitor const& other);
@@ -38,7 +39,7 @@ class ServerMonitor
 		void					run(void);
 
 
-		void					removePollfd(int fd);
+		void					closeConnection(int fd);
 
 	private:
 		std::map<int, Server*>		serversMap_;
@@ -47,18 +48,33 @@ class ServerMonitor
 		std::map<int, Response*>	responsesMap_;
 		std::vector<pollfd>			pollfdsVec_;
 
+		void						parseConfigFile(std::string const& configFileName);
+
 		void						setServersStartListen(void) const;
 
 		void						handleUserInput(void);
 		void						handleNewConnection(int fd);
-		void						handleClientRequest(pollfd& pollfd);
-		void						handleResponseToSend(pollfd& pollfd);
-		void						handleCgiResponse(pollfd& pollfd);
+		void						handleClientRequest(int fd);
+		void						handleResponseToSend(int fd);
+		void						handleCgiResponse(int fd);
 
 		std::string					recvMsg(int fd) const;
 		void						sendMsg(int fd, std::string const& msg) const;
 
 		int							getPollfdsVecIndxFromFd(int fd) const;
+		void						addNewPollfd(int fd, short events);
+		void						addEventToPolfd(int fd, short event);
+		void						RemoveEventToPolfd(int fd, short event);
+};
+
+class IoTroubleException : public std::runtime_error {
+	public:
+		IoTroubleException(std::string const& msg) : std::runtime_error(msg) {}
+};
+
+class ShutdownException : public std::runtime_error {
+	public:
+		ShutdownException(std::string const& msg) : std::runtime_error(msg) {}
 };
 
 #endif

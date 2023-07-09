@@ -6,11 +6,12 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:45 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/29 18:14:46 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/09 17:04:02 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Request.hpp"
+#include "ParseTools.hpp"
 #include <iostream>
 #include <sstream>
 
@@ -19,18 +20,16 @@ Request::Request(void) :	HttpMessage(),
 							uri_(""),
 							query_(),
 							uriWithQuery_(""),
-							httpVersion_(""),
-							clientSocket_(-1) {
+							httpVersion_("") {
 
 }
 
-Request::Request(std::string const& rawRequest, int clientSocket) :	HttpMessage(rawRequest),
-																	method_(""),
-																	uri_(""),
-																	query_(),
-																	uriWithQuery_(""),
-																	httpVersion_(""),
-																	clientSocket_(clientSocket) {
+Request::Request(std::string const& rawRequest) :	HttpMessage(rawRequest),
+													method_(""),
+													uri_(""),
+													query_(),
+													uriWithQuery_(""),
+													httpVersion_("") {
 	parseStartLine();
 }
 
@@ -39,8 +38,7 @@ Request::Request(Request const& other) :	HttpMessage(other),
 											uri_(other.uri_),
 											query_(other.query_),
 											uriWithQuery_(other.uriWithQuery_),
-											httpVersion_(other.httpVersion_),
-											clientSocket_(other.clientSocket_) {
+											httpVersion_(other.httpVersion_) {
 
 }
 
@@ -52,7 +50,6 @@ Request &Request::operator=(Request const& other) {
 		this->query_ = other.query_;
 		this->uriWithQuery_ = other.uriWithQuery_;
 		this->httpVersion_ = other.httpVersion_;
-		this->clientSocket_ = other.clientSocket_;
 	}
 	return (*this);
 }
@@ -156,4 +153,30 @@ void	Request::parseStartLine(void) {
 
 void	Request::updateStartLine(void) {
 	this->setStartLine(this->method_ + " " + this->uriWithQuery_ + " " + this->httpVersion_);
+}
+
+std::vector<Request*> parseMultipleRequest(std::string const& allMsgs) {
+	std::vector<Request*> reqVec;
+
+	std::istringstream	iss(allMsgs);
+	std::string			reqStr;
+	std::string			tmp;
+	int					contentLength = 0;
+
+	while(std::getline(iss, tmp)) {
+		reqStr += tmp + "\n";
+		if (tmp.find("Content-length:") != std::string::npos) {
+			contentLength = ParseTools::stringToInt(tmp.substr(tmp.find("Content-length:") + 15));
+		} else if (tmp == "\r") {
+			if (contentLength > 0) {
+				std::string body;
+				std::getline(iss, body);
+				reqStr += body;
+				contentLength = 0;
+			}
+			reqVec.push_back(new Request(reqStr));
+			reqStr = "";
+		}
+	}
+	return (reqVec);
 }

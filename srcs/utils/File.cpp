@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/20 12:30:35 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/01 10:59:53 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/09 12:31:44 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,7 +80,7 @@ std::map<std::string, std::string>	File::getFilesListing(void) const {
 
 	DIR* dir = opendir(this->getFullPath().c_str());
 	if (dir == NULL) {
-		throw std::runtime_error("Error: could not open directory");
+		throw OpeningFailed("Cannot open directory");
 	}
 
 	std::map<std::string, std::string> FilesList;
@@ -200,7 +200,7 @@ void	File::write(void) {
 		file << this->fileContent_;
 		file.close();
 	} else {
-		throw std::runtime_error("Cannot open file");
+		throw OpeningFailed("Cannot open file");
 	}
 }
 
@@ -214,7 +214,7 @@ void	File::read(void) {
 		}
 		file.close();
 	} else {
-		throw std::runtime_error("Cannot open file");
+		throw OpeningFailed("Cannot open file");
 	}
 }
 
@@ -225,7 +225,7 @@ void	File::append(std::string const& content) {
 		file << content;
 		file.close();
 	} else {
-		throw std::runtime_error("Cannot open file");
+		throw OpeningFailed("Cannot open file");
 	}
 	this->fileContent_ += content;
 }

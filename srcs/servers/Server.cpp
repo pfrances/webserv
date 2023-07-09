@@ -87,9 +87,9 @@ short Server::getPort(void) const {
 }
 
 void Server::setPort(std::string const& portStr) {
-	int port = std::atoi(portStr.c_str());
+	int port = ParseTools::stringToInt(portStr);
 	if (port < 0 || port > std::numeric_limits<unsigned short>::max()) {
-		throw std::runtime_error("Server::setPort: invalid port");
+		throw ConfigurationException("Server::setPort: invalid port");
 	}
 	this->port_ = static_cast<short>(port);
 }
@@ -111,7 +111,7 @@ int	Server::acceptNewClient(void) {
 
 void	Server::startListen(void) const {
 	if (listen(this->socketFd_, 10) < 0) {
-		throw std::runtime_error("listen error");
+		throw std::runtime_error(this->getHost() + ":" + ParseTools::intToString(this->getPort()) + " listen error");
 	}
 }
 
@@ -126,13 +126,13 @@ void	Server::parseServerConf(std::string const& serverConf) {
 			token = ParseTools::getNextToken(serverConf, it);
 			this->setPort(token);
 			if (ParseTools::getNextToken(serverConf, it) != ";") {
-				throw std::runtime_error("Server::Server: listen: no semicolon.");
+				throw ConfigurationException("[Configuration Server] listen: no semicolon.");
 			}
 		} else if (token == "server_name") {
 			token = ParseTools::getNextToken(serverConf, it);
 			this->serverName_ = token;
 			if (ParseTools::getNextToken(serverConf, it) != ";") {
-				throw std::runtime_error("Server::Server: server_name: no semicolon.");
+				throw ConfigurationException("[Configuration Server] server_name: no semicolon.");
 			}
 		} else if (token == "error_page") {
 			tokensVec = ParseTools::getAllTokensUntilSemicolon(serverConf, it);
@@ -145,13 +145,16 @@ void	Server::parseServerConf(std::string const& serverConf) {
 			token = ParseTools::getNextToken(serverConf, it);
 			defaultLocation.setClientMaxBodySize(token);
 			if (ParseTools::getNextToken(serverConf, it) != ";") {
-				throw std::runtime_error("Server::Server: client_body_size: no semicolon.");
+				throw ConfigurationException("[Configuration Server] client_body_size: no semicolon.");
 			}
+		} else if (token == "index") {
+			tokensVec = ParseTools::getAllTokensUntilSemicolon(serverConf, it);
+			defaultLocation.setIndex(tokensVec);
 		} else if (token == "root") {
 			token = ParseTools::getNextToken(serverConf, it);
 			defaultLocation.setRoot(token);
 			if (ParseTools::getNextToken(serverConf, it) != ";") {
-				throw std::runtime_error("Server::Server: root: no semicolon.");
+				throw ConfigurationException("[Configuration Server] root: no semicolon.");
 			}
 		} else if (token == "autoindex") {
 				token = ParseTools::getNextToken(serverConf, it);
@@ -160,13 +163,13 @@ void	Server::parseServerConf(std::string const& serverConf) {
 			} else if (token == "off") {
 				defaultLocation.setAutoIndex(false);
 			} else {
-				throw std::runtime_error("Server: autoindex: invalid argument.");
+				throw ConfigurationException("[Configuration Server] autoindex: invalid argument.");
 			}
 			if (ParseTools::getNextToken(serverConf, it) != ";") {
-				throw std::runtime_error("Location: autoindex: no semicolon.");
+				throw ConfigurationException("[Configuration Server] autoindex: no semicolon.");
 			}
 		} else {
-			throw std::runtime_error("Server::Server: unknown token -->'" + token + "'.");
+			throw ConfigurationException("[Configuration Server] unknown token " + token);
 		}
 		token = ParseTools::getNextToken(serverConf, it);
 	}
@@ -193,9 +196,9 @@ Response*	Server::handleError(int statusCode, Location *location) const {
 		res->setMimeByExtension(file.getExtension());
 		res->setBody(file.getFileContent());
 	} else {
-		res->setStatusCode(500);
+		res->setStatusCode(statusCode);
 		res->setSingleHeader("Content-Type", "text/plain");
-		res->setBody("Internal Server Error");
+		res->setBody("[Error]" + res->getStatusCode() + " : " + res->getStatusMessage());
 	}
 	return res;
 }
@@ -245,20 +248,13 @@ Response*	Server::handleIndexing(File const& file, Request const& req, Location 
 	return handleError(404, location);
 }
 
-Response*	Server::handleGetRequest(Request const& req) const {
-
-	Location *location = getCorrespondingLocation(req.getUri());
-	if (location == NULL) {
-		throw std::runtime_error("Server::handleGetRequest: no location found");
-	}
-
+Response*	Server::handleGetRequest(Request const& req, Location *location) const {
 	std::string const& path = location->getRoot() + req.getUri();
 
 	File file(path);
 	if (file.exists() == false) {
 		return this->handleError(404, location);
 	}
-
 
 	try {
 		if (file.isDirectory() == true) {
@@ -276,18 +272,16 @@ Response*	Server::handleGetRequest(Request const& req) const {
 	}
 }
 
-Response*	Server::handlePostRequest(Request const& req) const {
+Response*	Server::handlePostRequest(Request const& req, Location *location) const {
 	(void)req;
+	(void)location;
 	return NULL;
 }
 
-Response*	Server::handleDeleteRequest(Request const& req) const {
+Response*	Server::handleDeleteRequest(Request const& req, Location *location) const {
 	(void)req;
-	return NULL;
-}
+	(void)location;
 
-Response*	Server::handleUnknownRequest(Request const& req) const {
-	(void)req;
 	return NULL;
 }
 
@@ -299,12 +293,13 @@ Response*	Server::handleClientRequest(Request const& req) const {
 	}
 
 	std::string const& method = req.getMethod();
+	Location *location = getCorrespondingLocation(req.getUri());
 	if (method == "GET") {
-		return this->handleGetRequest(req);
+		return this->handleGetRequest(req, location);
 	} else if (method == "POST") {
-		return this->handlePostRequest(req);
+		return this->handlePostRequest(req, location);
 	} else if (method == "DELETE") {
-		return this->handleDeleteRequest(req);
+		return this->handleDeleteRequest(req, location);
 	}
 	return this->handleError(501, this->locationsMap_.find("/")->second);
 }

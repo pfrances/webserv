@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 19:02:03 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/29 17:25:44 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/09 16:37:40 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,10 +14,12 @@
 # define REQUEST_HPP
 
 # include "HttpMessage.hpp"
+# include <vector>
 
 class Request : public HttpMessage {
 	public:
-		Request(std::string const& rawRequest, int clientSocket);
+		Request(void);
+		Request(std::string const& rawRequest);
 		Request(Request const& other);
 		Request &operator=(Request const& other);
 		virtual ~Request(void);
@@ -38,7 +40,6 @@ class Request : public HttpMessage {
 		bool					isRequestValid(void) const;
 
 	private:
-		Request(void);
 		virtual	void			parseStartLine(void);
 		virtual void			updateStartLine(void);
 
@@ -49,8 +50,8 @@ class Request : public HttpMessage {
 		std::string				uriWithQuery_;
 
 		std::string				httpVersion_;
-
-		int						clientSocket_;
 };
+
+std::vector<Request*> parseMultipleRequest(std::string const& allMsgs);
 
 #endif

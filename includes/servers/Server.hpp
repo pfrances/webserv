@@ -53,10 +53,9 @@ class Server {
 		std::string				setFileListHtmlToReqBody(std::map<std::string, std::string> const& filesList,
 														Request const& req) const;
 		Response*				handleIndexing(File const& file, Request const& req, Location *location) const;
-		Response*				handleGetRequest(Request const& req) const;
-		Response*				handlePostRequest(Request const& req) const;
-		Response*				handleDeleteRequest(Request const& req) const;
-		Response*				handleUnknownRequest(Request const& req) const;
+		Response*				handleGetRequest(Request const& req, Location *location) const;
+		Response*				handlePostRequest(Request const& req, Location *location) const;
+		Response*				handleDeleteRequest(Request const& req, Location *location) const;
 
 		std::string				serverName_;
 		std::string				host_;

@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 17:53:49 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/29 12:35:16 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/09 12:16:26 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,8 +15,7 @@
 
 # include <string>
 # include <vector>
-
-class Server;
+# include <stdexcept>
 
 class ParseTools {
 	public:
@@ -28,6 +27,16 @@ class ParseTools {
 													std::string::const_iterator& it);
 		static std::string				intToString(int nb);
 		static int						stringToInt(std::string const& str);
+};
+
+class ConfigurationException : public std::runtime_error {
+	public:
+		ConfigurationException(std::string const& msg) : std::runtime_error(msg) {}
+};
+
+class ConversionException : public std::runtime_error {
+	public:
+		ConversionException(std::string const& msg) : std::runtime_error(msg) {}
 };
 
 #endif
