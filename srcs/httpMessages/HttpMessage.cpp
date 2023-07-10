@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 12:27:17 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/29 18:13:38 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/10 11:33:42 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -113,7 +113,6 @@ void	HttpMessage::setMimeByExtension(std::string const& ext) {
 	this->setSingleHeader("Content-Type", MimeTypes::getMimeType(ext));
 }
 
-
 /****************************Parsers****************************/
 void	HttpMessage::parseRawMessage() {
 
@@ -129,7 +128,11 @@ void	HttpMessage::parseRawMessage() {
 	}
 	this->parseHeadersMap();
 
-	std::getline(iss, this->body_, '\0');
+	if (this->headersMap_.find("Content-Length") != this->headersMap_.end()) {
+		std::string body;
+		std::getline(iss, body, '\0');
+		this->body_ = body.substr(0, ParseTools::stringToInt(this->headersMap_["Content-Length"]));
+	}
 }
 
 std::pair<std::string, std::string>	HttpMessage::parseSingleHeader(std::string const& header) {

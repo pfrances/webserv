@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 17:58:48 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/09 15:38:18 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/10 16:19:55 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include <stdexcept>
 #include <sstream>
 #include "Request.hpp"
+#include <iostream>
 
 std::string ParseTools::extractBlock(std::string const& conf, std::string::const_iterator& it) {
 	std::string::const_iterator	ite = conf.end();
@@ -110,4 +111,72 @@ int	ParseTools::stringToInt(std::string const& str) {
 		throw std::runtime_error("Failed to convert string to int");
 	}
 	return value;
+}
+
+int		ParseTools::hexaStrToInt(std::string const& hexa) {
+	std::istringstream iss(hexa);
+	int value = 0;
+	if (!(iss >> std::hex >> value)) {
+		throw std::runtime_error("Failed to convert hexa string to int");
+	}
+	return value;
+}
+
+void	ParseTools::decodeUrlEncodedStr(std::string& str) {
+	std::string::iterator it = str.begin();
+	std::string::iterator ite = str.end();
+
+	std::string decodedStr;
+	decodedStr.reserve(str.length());
+	for (; it != ite; it++) {
+		if (*it == '%') {
+			if (it + 2 >= ite) {
+				throw std::runtime_error("ParseTools::decodeUrlEncodedStr: invalid url encoded string.");
+			}
+			std::string hexStr(it + 1, it + 3);
+			int hex = hexaStrToInt(hexStr);
+			decodedStr += static_cast<char>(hex);
+			it += 2;
+		} else {
+			decodedStr += *it;
+		}
+	}
+	str = decodedStr;
+}
+
+std::map<std::string, std::string>	ParseTools::parseQuery(std::string const& queryStr) {
+	std::string::const_iterator it = queryStr.begin();
+	std::string::const_iterator ite = queryStr.end();
+
+	std::map<std::string, std::string> queryMap;
+
+	std::string key;
+	std::string token;
+	for (; it != ite; it++) {
+		if (*it == '=') {
+			key = token;
+			token = "";
+		} else if (*it == '&') {
+			decodeUrlEncodedStr(key);
+			decodeUrlEncodedStr(token);
+			queryMap.insert(std::pair<std::string, std::string>(key, token));
+			key = "";
+			token = "";
+		} else {
+			token += *it;
+		}
+	}
+	if (key.length() > 0) {
+		decodeUrlEncodedStr(key);
+		decodeUrlEncodedStr(token);
+		queryMap.insert(std::pair<std::string, std::string>(key, token));
+	}
+	return queryMap;
+}
+
+bool	ParseTools::isValidToken(std::string const& token, std::string const& forbiddenCharset) {
+	if (token.find_first_of(forbiddenCharset) != std::string::npos) {
+		return false;
+	}
+	return true;
 }

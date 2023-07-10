@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/09 21:04:31 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/10 11:17:02 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -199,11 +199,9 @@ void	ServerMonitor::run(void) {
 					}
 				}
 			} catch (IoTroubleException &e) {
-				std::cout << "Close connection [" << it->fd << "]. " << e.what() << std::endl;
 				this->closeConnection(it->fd);
 			}
 		}
-		sleep(1);
 	}
 }
 

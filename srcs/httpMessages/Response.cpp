@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:21 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/30 19:15:20 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/10 14:03:41 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -119,6 +119,10 @@ void	Response::setStatusMessageFromCode(int statusCode) {
 		this->statusMessage_ = "Conflict";
 	} else if (statusCode == 410) {
 		this->statusMessage_ = "Gone";
+	} else if (statusCode == 413) {
+		this->statusMessage_ = "Payload Too Large";
+	} else if (statusCode == 422) {
+		this->statusMessage_ = "Unprocessable Entity";
 	} else if (statusCode == 429) {
 		this->statusMessage_ = "Too Many Requests";
 	} else if (statusCode == 500) {
@@ -134,7 +138,7 @@ void	Response::setStatusMessageFromCode(int statusCode) {
 	} else if (statusCode == 505) {
 		this->statusMessage_ = "HTTP Version Not Supported";
 	} else {
-		this->statusMessage_ = "Unknow";
+		this->statusMessage_ = "Unknow error";
 	}
 }
 

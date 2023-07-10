@@ -1,41 +1,49 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<title>/uploads/ File Listing</title>
-<style>
-.delete-button {
-    margin-left: 10px;
-}
-</style>
+	<title>UPLOAD</title>
+	<script>
+		function sendDeleteRequest() {
+		  var key = document.getElementById('delete-key').value;
+
+		  fetch('/delete?key=' + encodeURIComponent(key), {
+			method: 'DELETE',
+		  })
+		  .then(response => {
+			if (response.ok) {
+			  console.log('ressource deleted !');
+			} else {
+			  console.log('something went wrong !');
+			}
+		  })
+		  .catch(error => {
+			console.error('something went wrong !', error);
+		  });
+		}
+	  </script>
 </head>
+
 <body>
-<table>
-<tr><td><a href="../">../</a></td> <td>&emsp;&emsp;(4096 bytes)</td></tr>
-<tr><td><a href="./">./</a></td> <td>&emsp;&emsp;(4096 bytes)</td></tr>
-<tr><td><a href="image.jpg">image.jpg</a></td> <td>&emsp;&emsp;(1751 bytes)</td>
-    <td><button class="delete-button" onclick="deleteFile('image.jpg')">Delete</button></td></tr>
-</table>
-<h2>Upload File</h2>
-<form action="/post/" method="post" enctype="multipart/form-data">
-    <input type="file" name="file" /><br />
-    <input type="submit" value="Upload" />
-</form>
+	<h1>Upload</h1>
+
+	<h2>POST Request</h2>
+	<form action="/post" method="POST">
+		<label for="post-key">Key :</label>
+		<input type="text" id="post-key" name="key" required><br>
+
+		<label for="post-value">Value :</label>
+		<input type="text" id="post-value" name="value" required><br>
+
+		<button type="submit">Set key</button>
+	</form>
+
+	<h2>DELETE Request</h2>
+	<form>
+		<label for="delete-key">Key :</label>
+		<input type="text" id="delete-key" required>
+		<button type="button" onclick="sendDeleteRequest()">Supprimer</button>
+	  </form>
 </body>
-<script>
-function deleteFile(filename) {
-    var confirmation = confirm("Are you sure you want to delete the file: " + filename + "?");
-    if (confirmation) {
-        var form = document.createElement("form");
-        form.method = "delete";
-        form.action = "/delete/";
-        var filenameInput = document.createElement("input");
-        filenameInput.type = "hidden";
-        filenameInput.name = "filename";
-        filenameInput.value = filename;
-        form.appendChild(filenameInput);
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
-</script>
+
 </html>

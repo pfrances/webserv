@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:45 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/09 17:04:02 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/10 17:14:26 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -70,6 +70,10 @@ std::string const& Request::getUriWithQuery(void) const {
 	return (this->uriWithQuery_);
 }
 
+std::map<std::string, std::string> const&	Request::getQuery(void) const {
+	return (this->query_);
+}
+
 std::string const&	Request::getHttpVersion(void) const {
 	return (this->httpVersion_);
 }
@@ -103,25 +107,7 @@ void	Request::setUri(std::string const& uri) {
 }
 
 void	Request::setQuery(std::string const& queryStr) {
-	std::string::const_iterator it = queryStr.begin();
-	std::string::const_iterator ite = queryStr.end();
-
-	std::string key;
-	std::string token;
-	for (; it != ite; it++) {
-		if (*it == '=') {
-			key = token;
-			token = "";
-		}
-		else if (*it == '&') {
-			this->query_[key] = token;
-			key = "";
-			token = "";
-		}
-		else {
-			token += *it;
-		}
-	}
+	this->query_ = ParseTools::parseQuery(queryStr);
 }
 
 void	Request::setHttpVersion(std::string const& httpVersion) {
@@ -139,11 +125,11 @@ void	Request::parseStartLine(void) {
 
 	std::getline(iss, tmp, ' ');
 	this->uriWithQuery_ = tmp;
-	if (tmp.find('?') != std::string::npos) {
-		this->setUri(tmp.substr(0, tmp.find('?')));
-		this->setQuery(tmp.substr(tmp.find('?') + 1));
-	}
-	else {
+	size_t queryStartPos = tmp.find("?");
+	if (queryStartPos != std::string::npos) {
+		this->setUri(tmp.substr(0, queryStartPos));
+		this->setQuery(tmp.substr(queryStartPos + 1));
+	} else {
 		this->setUri(tmp);
 	}
 
@@ -165,8 +151,8 @@ std::vector<Request*> parseMultipleRequest(std::string const& allMsgs) {
 
 	while(std::getline(iss, tmp)) {
 		reqStr += tmp + "\n";
-		if (tmp.find("Content-length:") != std::string::npos) {
-			contentLength = ParseTools::stringToInt(tmp.substr(tmp.find("Content-length:") + 15));
+		if (tmp.find("Content-Length:") != std::string::npos) {
+			contentLength = ParseTools::stringToInt(tmp.substr(15));
 		} else if (tmp == "\r") {
 			if (contentLength > 0) {
 				std::string body;

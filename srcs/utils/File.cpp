@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/20 12:30:35 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/09 12:31:44 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/10 16:29:34 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <iostream>
+#include <sstream>
 
 File::File(void) :	Path(),
 					fileName_(""),
@@ -228,6 +229,62 @@ void	File::append(std::string const& content) {
 		throw OpeningFailed("Cannot open file");
 	}
 	this->fileContent_ += content;
+}
+
+void File::setKeyValue(std::string const& key, std::string const& value) {
+	if (!ParseTools::isValidToken(key, "=\"'")) {
+		throw UnvalidTokenException("invalid key");
+	}
+	if (!ParseTools::isValidToken(value, "=\"'")) {
+		throw UnvalidTokenException("invalid value");
+	}
+
+	if (!this->isReadable()) {
+		this->setFileContent(key + "=" + value + "\n");
+		return;
+	}
+	bool keyFound = false;
+	std::istringstream iss(this->getFileContent());
+	std::string buff;
+	std::string newContent;
+	newContent.reserve(this->getFileContent().length());
+	while (std::getline(iss, buff)) {
+		std::string lineKey = buff.substr(0, buff.find("="));
+		std::string lineValue = buff.substr(buff.find("=") + 1);
+		if (lineKey == key) {
+			newContent += key + "=" + value + "\n";
+			keyFound = true;
+		} else {
+			newContent += buff + "\n";
+		}
+	}
+	if (!keyFound) {
+		newContent += key + "=" + value + "\n";
+	}
+	this->setFileContent(newContent);
+}
+
+void File::unsetKey(std::string const& key) {
+	if (!ParseTools::isValidToken(key, "=\"'")) {
+		throw UnvalidTokenException("invalid key");
+	}
+
+	if (!this->isReadable()) {
+		return;
+	}
+
+	std::istringstream iss(this->getFileContent());
+	std::string buff;
+	std::string newContent;
+	newContent.reserve(this->getFileContent().length());
+	while (std::getline(iss, buff)) {
+		std::string lineKey = buff.substr(0, buff.find("="));
+		std::string lineValue = buff.substr(buff.find("=") + 1);
+		if (lineKey != key) {
+			newContent += buff + "\n";
+		}
+	}
+	this->setFileContent(newContent);
 }
 
 std::ostream &operator<<(std::ostream &o, File& file) {

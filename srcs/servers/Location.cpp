@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:23:49 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/09 14:46:57 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/10 17:02:29 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,8 @@
 #include <iostream>
 
 Location::Location(void) :	path_("/"),
-							root_("./webserPages"),
+							root_("./"),
+							uploadPath_("./"),
 							index_(std::vector<std::string>()),
 							errorPages_(std::map<int, std::string>()),
 							redirect_(std::map<std::string, std::string>()),
@@ -33,19 +34,21 @@ Location::Location(void) :	path_("/"),
 Location::Location(std::string const& locationConf,
 					std::string const& path) :	path_(path),
 												root_(""),
+												uploadPath_("./"),
 												index_(std::vector<std::string>()),
 												errorPages_(std::map<int, std::string>()),
 												redirect_(std::map<std::string, std::string>()),
 												allowedMethods_(std::vector<std::string>()),
 												cgiPaths_(std::vector<std::string>()),
 												cgiExtensions_(std::vector<std::string>()),
-												clientMaxBodySize_(0),
+												clientMaxBodySize_(1024),
 												autoIndex_(false) {
 	this->parseLocationConf(locationConf);
 }
 
 Location::Location(Location const& other) :	path_(other.path_),
 											root_(other.root_),
+											uploadPath_(other.uploadPath_),
 											index_(other.index_),
 											errorPages_(other.errorPages_),
 											redirect_(other.redirect_),
@@ -62,6 +65,7 @@ Location &Location::operator=(Location const& other) {
 		this->path_ = other.path_;
 		this->root_ = other.root_;
 		this->index_ = other.index_;
+		this->uploadPath_ = other.uploadPath_;
 		this->errorPages_ = other.errorPages_;
 		this->redirect_ = other.redirect_;
 		this->allowedMethods_ = other.allowedMethods_;
@@ -373,6 +377,9 @@ void	Location::applyDefaultValues(Location const& defaultLocation) {
 	}
 	if (this->index_.empty()) {
 		this->index_ = defaultLocation.index_;
+	}
+	if (this->uploadPath_ == "./") {
+		this->uploadPath_ = defaultLocation.uploadPath_;
 	}
 	if (this->errorPages_.empty()) {
 		this->errorPages_ = defaultLocation.errorPages_;

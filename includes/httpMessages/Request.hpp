@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 19:02:03 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/09 16:37:40 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/10 16:54:26 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,8 @@ class Request : public HttpMessage {
 		std::string const&		getMethod(void) const;
 		std::string const&		getUri(void) const;
 		std::string const&		getUriWithQuery(void) const;
+		std::map<std::string,
+			std::string> const&	getQuery(void) const;
 		std::string const&		getHttpVersion(void) const;
 
 		void					setMethod(std::string const& method);

@@ -273,16 +273,86 @@ Response*	Server::handleGetRequest(Request const& req, Location *location) const
 }
 
 Response*	Server::handlePostRequest(Request const& req, Location *location) const {
-	(void)req;
-	(void)location;
-	return NULL;
+
+	if (location->isPostAllowed() == false) {
+		return handleError(405, location);
+	}
+
+	std::string const& body = req.getBody();
+	if (body.length() > location->getClientMaxBodySize()) {
+		return handleError(413, location);
+	}
+
+
+	std::string const& log_path = location->getUploadPath() + "/upload.log";
+	std::map<std::string, std::string> queryMap = ParseTools::parseQuery(body);
+	std::map<std::string, std::string>::const_iterator it = queryMap.begin();
+	try {
+		File file(log_path);
+		std::string const& key = it->second;
+		it++;
+		std::string const& value = it->second;
+		file.setKeyValue(key, value);
+	} catch (UnvalidTokenException& e) {
+		return handleError(422, location);
+	} catch (std::exception& e) {
+		return handleError(500, location);
+	}
+	Response *res = new Response();
+	res->setStatusCode(201);
+	std::string resBody =\
+"<!DOCTYPE html>\n\
+<html>\n\
+	<head>\n\
+		<title>Resource Created</title>\n\
+	</head>\n\
+	<body>\n\
+ 		<h1>Resource created successfully</h1>\n\
+	<p>The resource has been created at <a href=\"/upload/upload.log\">here</a>.</p>\n\
+	</body>\n\
+</html>";
+	res->setMimeByExtension("html");
+	res->setBody(resBody);
+	return res;
 }
 
 Response*	Server::handleDeleteRequest(Request const& req, Location *location) const {
-	(void)req;
-	(void)location;
 
-	return NULL;
+	if (location->isDeleteAllowed() == false) {
+		return handleError(405, location);
+	}
+
+	std::string const& body = req.getBody();
+	if (body.length() > location->getClientMaxBodySize()) {
+		return handleError(413, location);
+	}
+
+	std::string const& log_path = location->getUploadPath() + "/upload.log";
+	std::map<std::string, std::string>::const_iterator it = req.getQuery().begin();
+	try {
+		File file(log_path);
+		file.unsetKey(it->second);
+	} catch (UnvalidTokenException& e) {
+		return handleError(422, location);
+	} catch (std::exception& e) {
+		return handleError(500, location);
+	}
+	Response *res = new Response();
+	res->setStatusCode(204);
+	std::string resBody =\
+"<!DOCTYPE html>\n\
+<html>\n\
+	<head>\n\
+		<title>Resource deleted</title>\n\
+	</head>\n\
+	<body>\n\
+ 		<h1>Resource deleted successfully</h1>\n\
+	<p>The resource has been deleted from <a href=\"/upload/upload.log\">here</a>.</p>\n\
+	</body>\n\
+</html>";
+	res->setMimeByExtension("html");
+	res->setBody(resBody);
+	return res;
 }
 
 Response*	Server::handleClientRequest(Request const& req) const {

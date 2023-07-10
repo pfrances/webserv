@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 17:53:49 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/09 12:16:26 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/10 16:07:27 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 
 # include <string>
 # include <vector>
+# include <map>
 # include <stdexcept>
 
 class ParseTools {
@@ -27,6 +28,13 @@ class ParseTools {
 													std::string::const_iterator& it);
 		static std::string				intToString(int nb);
 		static int						stringToInt(std::string const& str);
+
+		static std::map<std::string,
+				std::string>			parseQuery(std::string const& queryStr);
+		static bool						isValidToken(std::string const& token,
+											std::string const& forbiddenCharset);
+		static void						decodeUrlEncodedStr(std::string& str);
+		static int						hexaStrToInt(std::string const& hexa);
 };
 
 class ConfigurationException : public std::runtime_error {
@@ -37,6 +45,11 @@ class ConfigurationException : public std::runtime_error {
 class ConversionException : public std::runtime_error {
 	public:
 		ConversionException(std::string const& msg) : std::runtime_error(msg) {}
+};
+
+class UnvalidTokenException : public std::runtime_error {
+	public:
+		UnvalidTokenException(std::string const& msg) : std::runtime_error(msg) {}
 };
 
 #endif
