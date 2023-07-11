@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/10 11:17:02 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/10 21:09:41 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -139,6 +139,7 @@ void	ServerMonitor::handleClientRequest(int fd) {
 	if (msg.empty()) {
 		return ;
 	}
+	std::cout << "Received message from client:\n" << msg << "\n---end---" << std::endl;
 
 	std::vector<Request*> resVec = parseMultipleRequest(msg);
 	std::vector<Request*>::iterator it = resVec.begin();

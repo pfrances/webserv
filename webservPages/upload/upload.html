@@ -5,23 +5,69 @@
 	<title>UPLOAD</title>
 	<script>
 		function sendDeleteRequest() {
-		  var key = document.getElementById('delete-key').value;
+			var key = document.getElementById('delete-key').value;
 
-		  fetch('/delete?key=' + encodeURIComponent(key), {
-			method: 'DELETE',
-		  })
-		  .then(response => {
-			if (response.ok) {
-			  console.log('ressource deleted !');
-			} else {
-			  console.log('something went wrong !');
-			}
-		  })
-		  .catch(error => {
-			console.error('something went wrong !', error);
-		  });
+			fetch('/delete?key=' + encodeURIComponent(key), {
+				method: 'DELETE',
+			})
+				.then(response => {
+					if (response.ok) {
+						console.log('Ressource deleted!');
+					} else {
+						console.log('Something went wrong!');
+					}
+				})
+				.catch(error => {
+					console.error('Something went wrong!', error);
+				});
 		}
-	  </script>
+		function handleUpload() {
+			const fileInput = document.getElementById('file-input');
+			const file = fileInput.files[0];
+
+			if (file) {
+				uploadFile(file);
+			} else {
+				console.log('Please select a file.');
+			}
+		}
+
+
+		function uploadFile(file) {
+			const chunkSize = 1024;
+			let offset = 0;
+
+			function readAndSendChunk() {
+				const chunk = file.slice(offset, offset + chunkSize);
+
+				const formData = new FormData();
+				formData.append('file', chunk);
+
+				fetch('/upload', {
+					method: 'POST',
+					body: formData
+				})
+				.then(response => {
+					if (1) {
+						console.log('Chunk uploaded!');
+						offset += chunkSize;
+
+						if (offset < file.size) {
+							readAndSendChunk();
+						} else {
+							console.log('File uploaded!');
+						}
+					} else {
+						console.error('Error uploading chunk:', response.status);
+					}
+				})
+				.catch(error => {
+					console.error('Error uploading chunk:', error);
+				});
+			}
+			readAndSendChunk();
+		}
+	</script>
 </head>
 
 <body>
@@ -43,7 +89,14 @@
 		<label for="delete-key">Key :</label>
 		<input type="text" id="delete-key" required>
 		<button type="button" onclick="sendDeleteRequest()">Supprimer</button>
-	  </form>
+	</form>
+
+	<h2>Upload file</h2>
+	<form>
+		<label for="file-input">Select a file to upload:</label>
+		<input type="file" id="file-input" required><br>
+		<button type="button" onclick="handleUpload()">Upload</button>
+	</form>
 </body>
 
 </html>
