@@ -206,7 +206,7 @@ Response*	Server::handleError(int statusCode, Location *location) const {
 std::string	Server::setFileListHtmlToReqBody(std::map<std::string, std::string> const& filesList,
 										Request const& req) const {
 
-	std::string fileListHTML = "<!DOCTYPE html><html>\n<head>\n<title>"
+	std::string fileListHTML = "<!DOCTYPE html>\n<html>\n<head>\n<title>"
 								+ req.getUri()
 								+ " File Listing</title>\n</head>\n<body>\n<table>\n";
 
@@ -376,7 +376,7 @@ Response*	Server::handleCgiRequest(Request const& req, Location *location) const
 	Response *res = new Response();
 	res->setCgiHandler(path, location->getCgiExecutor().at(0));
 	return res;
-} 
+}
 
 Response*	Server::handleClientRequest(Request const& req) const {
 
@@ -387,7 +387,7 @@ Response*	Server::handleClientRequest(Request const& req) const {
 
 	std::string const& method = req.getMethod();
 	Location *location = getCorrespondingLocation(req.getUri());
-	
+
 	if (method == "GET") {
 		return this->handleGetRequest(req, location);
 	} else if (method == "POST") {

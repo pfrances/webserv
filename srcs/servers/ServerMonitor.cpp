@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/10 21:09:41 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/11 23:27:28 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ ServerMonitor::~ServerMonitor(void) {
 	std::vector<pollfd>::iterator itPoll = pollfdsVec_.begin();
 	std::vector<pollfd>::iterator itePoll = pollfdsVec_.end();
 	for (; itPoll != itePoll; itPoll++){
-		if (itPoll->fd != STDIN_FILENO) {
+		if (itPoll->fd > 0) {
 			close(itPoll->fd);
 		}
 	}
@@ -46,6 +46,12 @@ ServerMonitor::~ServerMonitor(void) {
 	std::map<int, Response*>::iterator iteRes = responsesMap_.end();
 	for(; itRes != iteRes; itRes++) {
 		delete itRes->second;
+	}
+
+	std::map<int, Response*>::iterator itCgi = cgiResponsesMap_.begin();
+	std::map<int, Response*>::iterator iteCgi = cgiResponsesMap_.end();
+	for(; itCgi != iteCgi; itCgi++) {
+		delete itCgi->second;
 	}
 }
 
@@ -155,8 +161,6 @@ void	ServerMonitor::handleClientRequest(int fd) {
 		if (res) {
 			if (res->hasCgiHandler()) {
 				int cgiFd = res->getCgiHandler()->getPipeReadFd();
-				std::cout << res->getCgiHandler() << std::endl;
-				std::cout << cgiFd << std::endl;
 				this->addNewPollfd(cgiFd, POLLIN);
 				this->cgiResponsesMap_[cgiFd] = res;
 				res->setClientFd(fd);
@@ -171,9 +175,10 @@ void	ServerMonitor::handleClientRequest(int fd) {
 
 void	ServerMonitor::handleCgiResponse(int fd) {
 	Response *res = this->cgiResponsesMap_[fd];
-	
+
 	std::string msg = this->readPipe(fd);
 
+	closeConnection(fd);
 	res->killCgiHandler();
 	if (msg.empty()) {
 		return ;
@@ -182,7 +187,6 @@ void	ServerMonitor::handleCgiResponse(int fd) {
 	res->setRawMessage(msg);
 	this->responsesMap_[res->getClientFd()] = res;
 	this->addEventToPolfd(res->getClientFd(), POLLOUT);
-	this->closeConnection(fd);
 }
 
 void	ServerMonitor::handleResponseToSend(int fd) {
@@ -192,10 +196,10 @@ void	ServerMonitor::handleResponseToSend(int fd) {
 		std::string const& msg = res->getRawMessage();
 		this->sendMsg(fd, msg);
 
-		this->responsesMap_.erase(fd);
 		this->RemoveEventToPolfd(fd, POLLOUT);
 		delete res;
 	}
+	this->responsesMap_.erase(fd);
 }
 
 void	ServerMonitor::run(void) {
@@ -208,11 +212,10 @@ void	ServerMonitor::run(void) {
 
 		std::vector<pollfd>::iterator it = pollfdsVec_.begin();
 		std::vector<pollfd>::iterator ite = pollfdsVec_.end();
-		for (;it != ite; it++) {
+		for (; it != ite; it++) {
 			try {
 				if (it->revents & (POLLHUP | POLLERR | POLLNVAL)) {
 					this->closeConnection(it->fd);
-					continue;
 				}
 				if (it->revents & POLLIN) {
 					if (it->fd == STDIN_FILENO) {
@@ -223,7 +226,6 @@ void	ServerMonitor::run(void) {
 						this->handleClientRequest(it->fd);
 					} else if (this->cgiResponsesMap_.find(it->fd) != this->cgiResponsesMap_.end()) {
 						this->handleCgiResponse(it->fd);
-						continue;
 					}
 				}
 				if (it->revents & POLLOUT) {
@@ -239,15 +241,8 @@ void	ServerMonitor::run(void) {
 }
 
 void	ServerMonitor::closeConnection(int fd) {
-	std::vector<pollfd>::iterator it = pollfdsVec_.begin();
-	std::vector<pollfd>::iterator ite = pollfdsVec_.end();
-	for (; it != ite; it++) {
-		if (it->fd == fd) {
-			pollfdsVec_.erase(it);
-			close(fd);
-			break;
-		}
-	}
+
+	removePollfd(fd);
 
 	if (this->clientsMap_.find(fd) != this->clientsMap_.end()) {
 		this->clientsMap_.erase(fd);
@@ -306,12 +301,32 @@ void	ServerMonitor::sendMsg(int fd, std::string const& msg) const {
 }
 
 void	ServerMonitor::addNewPollfd(int fd, short events) {
+	std::vector<pollfd>::iterator it = this->pollfdsVec_.begin();
+	std::vector<pollfd>::iterator ite = this->pollfdsVec_.end();
+	for (; it != ite; it++) {
+		if (it->fd < 0) {
+			it->fd = fd;
+			it->events = events;
+			it->revents = 0;
+			return ;
+		}
+	}
+	pollfd pollfd;
+	pollfd.fd = fd;
+	pollfd.events = events;
+	pollfd.revents = 0;
+	this->pollfdsVec_.push_back(pollfd);
+}
 
-	this->pollfdsVec_.push_back(pollfd());
-
-	this->pollfdsVec_.back().fd = fd;
-	this->pollfdsVec_.back().events = events;
-	this->pollfdsVec_.back().revents = 0;
+void	ServerMonitor::removePollfd(int fd) {
+	std::vector<pollfd>::iterator it = this->pollfdsVec_.begin();
+	std::vector<pollfd>::iterator ite = this->pollfdsVec_.end();
+	for (; it != ite; it++) {
+		if (it->fd == fd) {
+			close(fd);
+			it->fd = -1;
+		}
+	}
 }
 
 void	ServerMonitor::addEventToPolfd(int fd, short event) {
@@ -329,7 +344,6 @@ void	ServerMonitor::addEventToPolfd(int fd, short event) {
 void	ServerMonitor::RemoveEventToPolfd(int fd, short event) {
 	std::vector<pollfd>::iterator it = this->pollfdsVec_.begin();
 	std::vector<pollfd>::iterator ite = this->pollfdsVec_.end();
-
 	for (; it != ite; it++) {
 		if (it->fd == fd) {
 			it->events &= ~event;

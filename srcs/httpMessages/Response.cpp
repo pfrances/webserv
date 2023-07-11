@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:21 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/10 14:03:41 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/11 22:14:59 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ Response::Response(std::string const& rawResponse) :	HttpMessage(rawResponse),
 }
 
 Response::~Response(void) {
-	if (this->cgiHandler_) {
+	if (this->cgiHandler_ != NULL) {
 		delete this->cgiHandler_;
 	}
 }
@@ -187,6 +187,7 @@ void	Response::setCgiHandler(std::string const& path, std::string const& cgiExec
 void	Response::killCgiHandler(void) {
 	if (this->cgiHandler_ != NULL) {
 		delete this->cgiHandler_;
+		this->cgiHandler_ = NULL;
 	}
 }
 

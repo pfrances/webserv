@@ -6,12 +6,13 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:44:51 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/10 09:45:48 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/11 23:45:49 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "CgiHandler.hpp"
 #include <stdexcept>
+#include <cstdlib>
 #include <signal.h>
 #include <iostream>
 
@@ -70,11 +71,12 @@ CgiHandler::~CgiHandler(void) {
 	if (pipe_[1] != -1) {
 		close(pipe_[1]);
 	}
-	// kill(pid_, SIGKILL);
+	kill(pid_, SIGKILL);
+	waitpid(pid_, NULL, 0);
 }
 
 pid_t const&	CgiHandler::getPid(void) const {
-	return (pid_);
+	return (this->pid_);
 }
 
 int	CgiHandler::getPipeReadFd(void) const {
@@ -82,15 +84,15 @@ int	CgiHandler::getPipeReadFd(void) const {
 }
 
 int	CgiHandler::getPipeWriteFd(void) const {
-	return (pipe_[1]);
+	return (this->pipe_[1]);
 }
 
 std::vector<char*> const&	CgiHandler::getEnv(void) const {
-	return (env_);
+	return (this->env_);
 }
 
 std::string	const&	CgiHandler::getCgiPath(void) const {
-	return (cgiPath_);
+	return (this->cgiPath_);
 }
 
 void	CgiHandler::setCgiPath(std::string const& path) {
@@ -114,13 +116,11 @@ void	CgiHandler::executeCgi(void) {
 		throw std::runtime_error("pipe error");
 	}
 	std::vector<char*> args;
-	if (this->cgiExecutor_.empty()) {
+	if (!this->cgiExecutor_.empty()) {
 		args.push_back(const_cast<char*>(this->cgiExecutor_.c_str()));
 	}
 	args.push_back(const_cast<char*>(this->cgiPath_.c_str()));
 	args.push_back(NULL);
-
-	this->env_.push_back(NULL);
 
 	this->pid_ = fork();
 	if (this->pid_ == -1) {
@@ -132,11 +132,9 @@ void	CgiHandler::executeCgi(void) {
 		dup2(this->pipe_[1], STDOUT_FILENO);
 		close(this->pipe_[1]);
 		close(this->pipe_[0]);
-		if (*(this->env_.end()) != NULL) {
-			this->env_.push_back(NULL);
-		}
-		if (execve(cgiPath_.c_str(), args.data(), this->env_.data()) < 0) {
-			std::exit(0);
+
+		if (execve(args.at(0), args.data(), this->env_.data()) < 0) {
+			std::exit(1);
 		}
 	}
 	close(this->pipe_[1]);

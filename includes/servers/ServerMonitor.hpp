@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 15:00:29 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/09 14:40:06 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/11 19:55:37 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,6 +66,7 @@ class ServerMonitor
 		void						addNewPollfd(int fd, short events);
 		void						addEventToPolfd(int fd, short event);
 		void						RemoveEventToPolfd(int fd, short event);
+		void						removePollfd(int fd);
 };
 
 class IoTroubleException : public std::runtime_error {
