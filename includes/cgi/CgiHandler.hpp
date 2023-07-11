@@ -21,6 +21,7 @@
 
 class CgiHandler {
 	public:
+		CgiHandler(std::string const& cgiPath, std::string const& cgiExecutor);
 		CgiHandler(std::string const& cgiPath, std::vector<char*> const& env);
 		CgiHandler(CgiHandler const& other);
 		CgiHandler &operator=(CgiHandler const& other);
@@ -38,6 +39,7 @@ class CgiHandler {
 		CgiHandler(void);
 		pid_t				pid_;
 		std::string			cgiPath_;
+		std::string			cgiExecutor_;
 		int					pipe_[2];
 		std::vector<char*>	env_;
 

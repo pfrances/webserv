@@ -17,25 +17,30 @@
 Response::Response(void) :	HttpMessage(),
 							statusCode_(""),
 							statusMessage_(""),
-							httpVersion_("HTTP/1.1") {
+							httpVersion_("HTTP/1.1"),
+							cgiHandler_(NULL) {
 
 }
 
 Response::Response(std::string const& rawResponse) :	HttpMessage(rawResponse),
 														statusCode_(""),
 														statusMessage_(""),
-														httpVersion_("") {
+														httpVersion_(""),
+														cgiHandler_(NULL) {
 	parseStartLine();
 }
 
 Response::~Response(void) {
-
+	if (this->cgiHandler_) {
+		delete this->cgiHandler_;
+	}
 }
 
 Response::Response(Response const& other) : HttpMessage(other),
 											statusCode_(other.statusCode_),
 											statusMessage_(other.statusMessage_),
-											httpVersion_(other.httpVersion_) {
+											httpVersion_(other.httpVersion_),
+											cgiHandler_(other.cgiHandler_)  {
 
 }
 
@@ -45,6 +50,7 @@ Response &Response::operator=(Response const& other) {
 		this->statusCode_ = other.statusCode_;
 		this->statusMessage_ = other.statusMessage_;
 		this->httpVersion_ = other.httpVersion_;
+		this->cgiHandler_ = other.cgiHandler_;
 	}
 	return (*this);
 }
@@ -59,6 +65,14 @@ std::string const&	Response::getStatusMessage(void) const {
 
 std::string const&	Response::getHttpVersion(void) const {
 	return (this->httpVersion_);
+}
+
+bool	Response::hasCgiHandler(void) const {
+	return (this->cgiHandler_ != NULL);
+}
+
+CgiHandler*	Response::getCgiHandler(void) {
+	return this->cgiHandler_;
 }
 
 void	Response::setStatusCode(std::string const& statusCode) {
@@ -142,6 +156,14 @@ void	Response::setStatusMessageFromCode(int statusCode) {
 	}
 }
 
+int	Response::getClientFd(void) const {
+	return this->clientFd_;
+}
+
+void	Response::setClientFd(int fd) {
+	this->clientFd_ = fd;
+}
+
 void	Response::setStatusMessage(std::string const& statusMessage) {
 	this->statusMessage_ = statusMessage;
 	this->updateStartLine();
@@ -152,6 +174,19 @@ void	Response::setHttpVersion(std::string const& httpVersion) {
 	this->httpVersion_ = httpVersion;
 	this->updateStartLine();
 	this->updateRawMessage();
+}
+
+void	Response::setCgiHandler(std::string const& path, std::string const& cgiExecutor) {
+	if (this->cgiHandler_ != NULL) {
+		delete this->cgiHandler_;
+	}
+	this->cgiHandler_ = new CgiHandler(path, cgiExecutor);
+}
+
+void	Response::killCgiHandler(void) {
+	if (this->cgiHandler_ != NULL) {
+		delete this->cgiHandler_;
+	}
 }
 
 void	Response::parseStartLine(void) {

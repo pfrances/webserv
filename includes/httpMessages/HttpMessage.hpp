@@ -33,6 +33,7 @@ class HttpMessage
 		void							setHeadersStr(std::string const& headersStr);
 		void							setHeadersMap(std::map<std::string, std::string> const& headers);
 		void							setBody(std::string const& body);
+		void							appendToBody(std::string const& chunk);
 		void							setRawMessage(std::string const& rawMessage);
 
 		std::string const&				getStartLine(void) const;
@@ -42,6 +43,8 @@ class HttpMessage
 		std::string const&				getHeadersStr(void) const;
 		std::string const&				getBody(void) const;
 		std::string const&				getRawMessage(void) const;
+
+		bool							isFetched(void) const;
 
 		bool							hasStartLine(void) const;
 		bool							hasHeaders(void) const;
@@ -59,6 +62,12 @@ class HttpMessage
 		std::string						headersStr_;
 		std::string						body_;
 
+		bool							chunksFetched_;
+		size_t							totalSize_;
+		std::string						boundary_;
+
+
+
 		virtual void					parseStartLine(void) = 0;
 		virtual void					updateStartLine(void) = 0;
 		void							updateRawMessage(void);
@@ -68,6 +77,7 @@ class HttpMessage
 		void							parseHeadersMap(void);
 		std::pair<std::string,
 				std::string>			parseSingleHeader(std::string const& header);
+		void							parseBody(std::string const& body);
 
 		void							updateHeadersStr(void);
 };

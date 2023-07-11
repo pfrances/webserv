@@ -139,7 +139,6 @@ void	ServerMonitor::handleClientRequest(int fd) {
 	if (msg.empty()) {
 		return ;
 	}
-	std::cout << "Received message from client:\n" << msg << "\n---end---" << std::endl;
 
 	std::vector<Request*> resVec = parseMultipleRequest(msg);
 	std::vector<Request*>::iterator it = resVec.begin();
@@ -147,13 +146,42 @@ void	ServerMonitor::handleClientRequest(int fd) {
 	for (; it != ite; it++) {
 		Request *req = *it;
 		Server *server = this->clientsMap_[fd];
+		std::cout << req->getRawMessage() << std::endl;
+		while (req->isFetched() == false) {
+			std::string msg = this->recvMsg(fd);
+			req->appendToBody(msg);
+		}
+
 		Response *res = server->handleClientRequest(*req);
 		if (res) {
-			this->responsesMap_[fd] = res;
-			this->addEventToPolfd(fd, POLLOUT);
+			if (res->hasCgiHandler()) {
+				int cgiFd = res->getCgiHandler()->getPipeReadFd();
+				this->addNewPollfd(cgiFd, POLLIN);
+				this->cgiResponsesMap_[cgiFd] = res;
+				res->setClientFd(fd);
+			} else {
+				this->responsesMap_[fd] = res;
+				this->addEventToPolfd(fd, POLLOUT);
+			}
 		}
 		delete req;
 	}
+}
+
+void	ServerMonitor::handleCgiResponse(int fd) {
+	Response *res = this->cgiResponsesMap_[fd];
+	
+	std::string msg = this->readPipe(fd);
+	res->killCgiHandler();
+	if (msg.empty()) {
+		return ;
+	}
+
+	res->setRawMessage(msg);
+	this->responsesMap_[fd] = res;
+	this->cgiResponsesMap_.erase(fd);
+	this->addEventToPolfd(res->getClientFd(), POLLOUT);
+	this->RemoveEventToPolfd(fd, POLLIN);
 }
 
 void	ServerMonitor::handleResponseToSend(int fd) {
@@ -192,6 +220,8 @@ void	ServerMonitor::run(void) {
 						this->handleNewConnection(it->fd);
 					} else if (this->clientsMap_.find(it->fd) != this->clientsMap_.end()) {
 						this->handleClientRequest(it->fd);
+					} else if (this->cgiResponsesMap_.find(it->fd) != this->cgiResponsesMap_.end()) {
+						this->handleCgiResponse(it->fd);
 					}
 				}
 				if (it->revents & POLLOUT) {
@@ -225,6 +255,23 @@ void	ServerMonitor::closeConnection(int fd) {
 		delete this->responsesMap_[fd];
 		this->responsesMap_.erase(fd);
 	}
+}
+
+std::string	ServerMonitor::readPipe(int fd) const {
+	char			buff[BUFFER_SIZE + 1];
+	std::string		msg;
+
+	while (true) {
+		int	bytesRead = read(fd, buff, BUFFER_SIZE);
+		buff[bytesRead] = '\0';
+		msg += buff;
+		if (bytesRead < 0) {
+			throw IoTroubleException("An issue occured while read from pipe");
+		} else if (bytesRead < BUFFER_SIZE) {
+			break ;
+		}
+	}
+	return msg;
 }
 
 std::string ServerMonitor::recvMsg(int fd) const {

@@ -32,7 +32,7 @@ public:
 	std::map<int, std::string> const&			getErrorPages(void) const;
 	std::map<std::string, std::string> const&	getRedirect(void) const;
 	std::vector<std::string> const&				getAllowedMethods(void) const;
-	std::vector<std::string> const&				getCgiPath(void) const;
+	std::vector<std::string> const&				getCgiExecutor(void) const;
 	std::vector<std::string> const&				getCgiExtensions(void) const;
 	size_t										getClientMaxBodySize(void) const;
 	bool										getAutoIndex(void) const;
@@ -61,8 +61,8 @@ public:
 	void		setAllowedMethods(std::vector<std::string> const& allowedMethods);
 	void		addAllowedMethods(std::string const& allowedMethods);
 
-	void		setCgiPath(std::vector<std::string> const& cgiPaths);
-	void		addCgiPath(std::string const& cgiPath);
+	void		setCgiExecutor(std::vector<std::string> const& CgiExecutors);
+	void		addCgiExecutor(std::string const& CgiExecutor);
 
 	void		setCgiExtension(std::vector<std::string> const& cgiExtension);
 	void		addCgiExtension(std::string const& cgiExtension);
@@ -89,7 +89,7 @@ private:
 
 	std::vector<std::string>			allowedMethods_;
 
-	std::vector<std::string>			cgiPaths_;
+	std::vector<std::string>			cgiExecutor_;
 	std::vector<std::string>			cgiExtensions_;
 
 	size_t								clientMaxBodySize_;

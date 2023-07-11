@@ -55,7 +55,10 @@ class Server {
 		Response*				handleIndexing(File const& file, Request const& req, Location *location) const;
 		Response*				handleGetRequest(Request const& req, Location *location) const;
 		Response*				handlePostRequest(Request const& req, Location *location) const;
+		Response*				handleLogPostRequest(Request const& req, Location *location) const;
 		Response*				handleDeleteRequest(Request const& req, Location *location) const;
+
+		Response*				handleCgiRequest(Request const& req, Location *location) const;
 
 		std::string				serverName_;
 		std::string				host_;

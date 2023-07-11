@@ -44,7 +44,7 @@ class ServerMonitor
 	private:
 		std::map<int, Server*>		serversMap_;
 		std::map<int, Server*>		clientsMap_;
-		std::map<int, CgiHandler*>	cgiHandlersMap_;
+		std::map<int, Response*>	cgiResponsesMap_;
 		std::map<int, Response*>	responsesMap_;
 		std::vector<pollfd>			pollfdsVec_;
 
@@ -59,6 +59,7 @@ class ServerMonitor
 		void						handleCgiResponse(int fd);
 
 		std::string					recvMsg(int fd) const;
+		std::string					readPipe(int fd) const;
 		void						sendMsg(int fd, std::string const& msg) const;
 
 		int							getPollfdsVecIndxFromFd(int fd) const;

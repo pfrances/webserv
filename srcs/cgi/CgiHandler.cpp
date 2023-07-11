@@ -12,6 +12,7 @@
 
 #include "CgiHandler.hpp"
 #include <stdexcept>
+#include <signal.h>
 
 CgiHandler::CgiHandler(void) :	pid_(-1),
 								cgiPath_(""),
@@ -19,6 +20,14 @@ CgiHandler::CgiHandler(void) :	pid_(-1),
 								env_() {
 	pipe_[0] = -1;
 	pipe_[1] = -1;
+}
+
+CgiHandler::CgiHandler(std::string const& cgiPath, std::string const& cgiExecutor) :	pid_(-1),
+																						cgiPath_(cgiPath),
+																						cgiExecutor_(cgiExecutor),
+																						pipe_(),
+																						env_() {
+
 }
 
 CgiHandler::CgiHandler(std::string const& cgiPath,
@@ -79,32 +88,35 @@ std::string	const&	CgiHandler::getCgiPath(void) const {
 }
 
 void	CgiHandler::executeCgi(void) {
-	if (pipe(pipe_) == -1) {
+	if (pipe(this->pipe_) == -1) {
 		throw std::runtime_error("pipe error");
 	}
-	char **args = new char*[2];
-	args[0] = new char[this->cgiPath_.size() + 1];
-	args[1] = NULL;
+	std::vector<char*> args;
+	if (this->cgiExecutor_.empty()) {
+		args.push_back(const_cast<char*>(this->cgiExecutor_.c_str()));
+	}
+	args.push_back(const_cast<char*>(this->cgiPath_.c_str()));
+	args.push_back(NULL);
 
-	pid_ = fork();
-	if (pid_ == -1) {
+	this->env_.push_back(NULL);
+
+
+	this->pid_ = fork();
+	if (this->pid_ == -1) {
 		throw std::runtime_error("fork error");
 	}
 
-	if (pid_ == 0) {
-		close(pipe_[1]);
-		dup2(pipe_[0], STDIN_FILENO);
-		close(pipe_[0]);
+	if (this->pid_ == 0) {
+		close(this->pipe_[1]);
+		dup2(this->pipe_[0], STDIN_FILENO);
+		close(this->pipe_[0]);
 		if (*(this->env_.end()) != NULL) {
 			this->env_.push_back(NULL);
 		}
-		if (execve(cgiPath_.c_str(), args, this->env_.data()) < 0) {
-			delete[] args[0];
-			delete[] args;
+		if (execve(cgiPath_.c_str(), args.data(), this->env_.data()) < 0) {
 			throw std::runtime_error("execve error");
 		}
 	}
-	close(pipe_[0]);
-	delete[] args[0];
-	delete[] args;
+	close(this->pipe_[0]);
+	this->pipe_[0] = -1;
 }

@@ -24,7 +24,7 @@ Location::Location(void) :	path_("/"),
 							errorPages_(std::map<int, std::string>()),
 							redirect_(std::map<std::string, std::string>()),
 							allowedMethods_(std::vector<std::string>()),
-							cgiPaths_(std::vector<std::string>()),
+							cgiExecutor_(std::vector<std::string>()),
 							cgiExtensions_(std::vector<std::string>()),
 							clientMaxBodySize_(1024),
 							autoIndex_(false) {
@@ -39,7 +39,7 @@ Location::Location(std::string const& locationConf,
 												errorPages_(std::map<int, std::string>()),
 												redirect_(std::map<std::string, std::string>()),
 												allowedMethods_(std::vector<std::string>()),
-												cgiPaths_(std::vector<std::string>()),
+												cgiExecutor_(std::vector<std::string>()),
 												cgiExtensions_(std::vector<std::string>()),
 												clientMaxBodySize_(1024),
 												autoIndex_(false) {
@@ -53,7 +53,7 @@ Location::Location(Location const& other) :	path_(other.path_),
 											errorPages_(other.errorPages_),
 											redirect_(other.redirect_),
 											allowedMethods_(other.allowedMethods_),
-											cgiPaths_(other.cgiPaths_),
+											cgiExecutor_(other.cgiExecutor_),
 											cgiExtensions_(other.cgiExtensions_),
 											clientMaxBodySize_(other.clientMaxBodySize_),
 											autoIndex_(other.autoIndex_) {
@@ -69,7 +69,7 @@ Location &Location::operator=(Location const& other) {
 		this->errorPages_ = other.errorPages_;
 		this->redirect_ = other.redirect_;
 		this->allowedMethods_ = other.allowedMethods_;
-		this->cgiPaths_ = other.cgiPaths_;
+		this->cgiExecutor_ = other.cgiExecutor_;
 		this->cgiExtensions_ = other.cgiExtensions_;
 		this->clientMaxBodySize_ = other.clientMaxBodySize_;
 		this->autoIndex_ = other.autoIndex_;
@@ -109,8 +109,8 @@ std::vector<std::string> const& Location::getAllowedMethods(void) const {
 	return (this->allowedMethods_);
 }
 
-std::vector<std::string> const& Location::getCgiPath(void) const {
-	return (this->cgiPaths_);
+std::vector<std::string> const& Location::getCgiExecutor(void) const {
+	return (this->cgiExecutor_);
 }
 
 std::vector<std::string> const& Location::getCgiExtensions(void) const {
@@ -222,12 +222,12 @@ void Location::addAllowedMethods(std::string const& allowedMethods) {
 	this->allowedMethods_.push_back(allowedMethods);
 }
 
-void Location::setCgiPath(std::vector<std::string> const& cgiPath) {
-	this->cgiPaths_ = cgiPath;
+void Location::setCgiExecutor(std::vector<std::string> const& cgiExecutor) {
+	this->cgiExecutor_ = cgiExecutor;
 }
 
-void Location::addCgiPath(std::string const& cgiPath) {
-	this->cgiPaths_.push_back(cgiPath);
+void Location::addCgiExecutor(std::string const& cgiExecutor) {
+	this->cgiExecutor_.push_back(cgiExecutor);
 }
 
 void Location::setCgiExtension(std::vector<std::string> const& cgiExtension) {
@@ -331,9 +331,9 @@ void Location::parseLocationConf(std::string const& locationBlock) {
 		} else if (token == "allow_methods") {
 			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
 			this->setAllowedMethods(tokensVector);
-		} else if (token == "cgi_path") {
+		} else if (token == "cgi_executor") {
 			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
-			this->setCgiPath(tokensVector);
+			this->setCgiExecutor(tokensVector);
 		} else if (token == "cgi_ext") {
 			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
 			this->setCgiExtension(tokensVector);
@@ -349,9 +349,6 @@ void Location::parseLocationConf(std::string const& locationBlock) {
 			if (ParseTools::getNextToken(locationBlock, it) != ";") {
 				throw ConfigurationException("Location [" + this->path_ + "]: upload_path: no semicolon.");
 			}
-		} else if (token == "execute_cgi") {
-			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
-			this->setCgiExtension(tokensVector);
 		} else if (token == "autoindex") {
 			token = ParseTools::getNextToken(locationBlock, it);
 			if (token == "on") {
@@ -390,8 +387,8 @@ void	Location::applyDefaultValues(Location const& defaultLocation) {
 	if (this->allowedMethods_.size() == 1 && this->allowedMethods_.front() == "GET") {
 		this->allowedMethods_ = defaultLocation.allowedMethods_;
 	}
-	if (this->cgiPaths_.empty()) {
-		this->cgiPaths_ = defaultLocation.cgiPaths_;
+	if (this->cgiExecutor_.empty()) {
+		this->cgiExecutor_ = defaultLocation.cgiExecutor_;
 	}
 	if (this->cgiExtensions_.empty()) {
 		this->cgiExtensions_ = defaultLocation.cgiExtensions_;

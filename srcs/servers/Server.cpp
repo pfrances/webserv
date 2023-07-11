@@ -198,7 +198,7 @@ Response*	Server::handleError(int statusCode, Location *location) const {
 	} else {
 		res->setStatusCode(statusCode);
 		res->setSingleHeader("Content-Type", "text/plain");
-		res->setBody("[Error]" + res->getStatusCode() + " : " + res->getStatusMessage());
+		res->setBody("[Error " + res->getStatusCode() + "] " + res->getStatusMessage());
 	}
 	return res;
 }
@@ -249,6 +249,14 @@ Response*	Server::handleIndexing(File const& file, Request const& req, Location 
 }
 
 Response*	Server::handleGetRequest(Request const& req, Location *location) const {
+
+	if (location->isGetAllowed() == false) {
+		handleError(405, location);
+	}
+
+	if (location->getPath().find("/cgi-bin") != location->getPath().npos) {
+		return this->handleCgiRequest(req, location);
+	}
 	std::string const& path = location->getRoot() + req.getUri();
 
 	File file(path);
@@ -272,17 +280,11 @@ Response*	Server::handleGetRequest(Request const& req, Location *location) const
 	}
 }
 
-Response*	Server::handlePostRequest(Request const& req, Location *location) const {
-
-	if (location->isPostAllowed() == false) {
-		return handleError(405, location);
-	}
-
+Response*	Server::handleLogPostRequest(Request const& req, Location *location) const {
 	std::string const& body = req.getBody();
 	if (body.length() > location->getClientMaxBodySize()) {
 		return handleError(413, location);
 	}
-
 
 	std::string const& log_path = location->getUploadPath() + "/upload.log";
 	std::map<std::string, std::string> queryMap = ParseTools::parseQuery(body);
@@ -314,6 +316,20 @@ Response*	Server::handlePostRequest(Request const& req, Location *location) cons
 	res->setMimeByExtension("html");
 	res->setBody(resBody);
 	return res;
+}
+
+Response*	Server::handlePostRequest(Request const& req, Location *location) const {
+
+	if (location->isPostAllowed() == false) {
+		return handleError(405, location);
+	}
+	return this->handleLogPostRequest(req, location);
+
+	std::string const& contentType = req.getSingleHeader("Content-Type");
+	if (contentType == "application/x-www-form-urlencoded") {
+	}
+
+	return handleError(500, location);
 }
 
 Response*	Server::handleDeleteRequest(Request const& req, Location *location) const {
@@ -355,6 +371,13 @@ Response*	Server::handleDeleteRequest(Request const& req, Location *location) co
 	return res;
 }
 
+Response*	Server::handleCgiRequest(Request const& req, Location *location) const {
+	std::string path =  location->getRoot() + req.getUri() + location->getIndex().at(0);
+	Response *res = new Response();
+	res->setCgiHandler(path, location->getCgiExecutor().at(0));
+	return res;
+} 
+
 Response*	Server::handleClientRequest(Request const& req) const {
 
 	std::cout << req.getStartLine() << std::endl;
@@ -364,6 +387,7 @@ Response*	Server::handleClientRequest(Request const& req) const {
 
 	std::string const& method = req.getMethod();
 	Location *location = getCorrespondingLocation(req.getUri());
+	
 	if (method == "GET") {
 		return this->handleGetRequest(req, location);
 	} else if (method == "POST") {

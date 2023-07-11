@@ -14,22 +14,35 @@
 #include "ParseTools.hpp"
 #include "MimeTypes.hpp"
 #include <sstream>
+#include <iostream>
 
 HttpMessage::HttpMessage(void) :	rawMessage_(""),
 									startLine_(""),
 									headersMap_(),
-									body_("") {
+									body_(""),
+									chunksFetched_(true),
+									totalSize_(0),
+									boundary_("") {
 
 }
 
-HttpMessage::HttpMessage(std::string const& rawMessage) : rawMessage_(rawMessage) {
+HttpMessage::HttpMessage(std::string const& rawMessage) :	rawMessage_(rawMessage),
+															startLine_(""),
+															headersMap_(),
+															body_(""),
+															chunksFetched_(true),
+															totalSize_(0),
+															boundary_("") {
 	parseRawMessage();
 }
 
 HttpMessage::HttpMessage(HttpMessage const& other) :	rawMessage_(other.rawMessage_),
 														startLine_(other.startLine_),
 														headersMap_(other.headersMap_),
-														body_(other.body_) {
+														body_(other.body_),
+														chunksFetched_(other.chunksFetched_),
+														totalSize_(other.totalSize_), 
+														boundary_(other.boundary_) {
 	if (this != &other) {
 		*this = other;
 	}
@@ -41,6 +54,9 @@ HttpMessage&	HttpMessage::operator=(HttpMessage const& other) {
 		this->startLine_ = other.startLine_;
 		this->headersMap_ = other.headersMap_;
 		this->body_ = other.body_;
+		this->chunksFetched_ = other.chunksFetched_;
+		this->totalSize_ = other.totalSize_;
+		this->boundary_ = other.boundary_;
 	}
 	return (*this);
 }
@@ -74,6 +90,10 @@ std::string const&	HttpMessage::getRawMessage(void) const {
 	return (this->rawMessage_);
 }
 
+bool	HttpMessage::isFetched(void) const {
+	return this->chunksFetched_;
+}
+
 /****************************Setters****************************/
 void	HttpMessage::setStartLine(std::string const& startLine) {
 	this->startLine_ = startLine;
@@ -104,6 +124,15 @@ void	HttpMessage::setBody(std::string const& body) {
 	this->updateRawMessage();
 }
 
+void	HttpMessage::appendToBody(std::string const& chunk) {
+	this->body_ += chunk;
+	this->setSingleHeader("Content-Length", ParseTools::intToString(this->body_.length()));
+	this->updateRawMessage();
+	if (this->body_.length() == this->totalSize_) {
+		this->chunksFetched_ = true;
+	}
+}
+
 void	HttpMessage::setRawMessage(std::string const& rawMessage) {
 	this->rawMessage_ = rawMessage;
 	parseRawMessage();
@@ -131,7 +160,7 @@ void	HttpMessage::parseRawMessage() {
 	if (this->headersMap_.find("Content-Length") != this->headersMap_.end()) {
 		std::string body;
 		std::getline(iss, body, '\0');
-		this->body_ = body.substr(0, ParseTools::stringToInt(this->headersMap_["Content-Length"]));
+		this->parseBody(body);
 	}
 }
 
@@ -153,6 +182,21 @@ void	HttpMessage::parseHeadersMap(void) {
 	while (std::getline(iss, header)) {
 		std::pair<std::string, std::string> headerPair = parseSingleHeader(header);
 		this->headersMap_.insert(headerPair);
+	}
+}
+
+void	HttpMessage::parseBody(std::string const& body) {
+	this->totalSize_ = ParseTools::stringToInt(this->getSingleHeader("Content-Length"));
+	std::string const& contentType = this->getSingleHeader("Content-Type");
+
+	if (contentType.find("multipart/form-data") != contentType.npos) {
+		this->boundary_ = contentType.substr(contentType.find("bundary=") + 8);
+		this->chunksFetched_ = false;
+		if (body.length() > 0) {
+			this->setBody(body);
+		}
+	} else {
+		this->setBody(body);
 	}
 }
 

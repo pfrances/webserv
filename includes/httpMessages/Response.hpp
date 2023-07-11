@@ -14,6 +14,7 @@
 # define RESPONSE_HPP
 
 # include "HttpMessage.hpp"
+# include "CgiHandler.hpp"
 
 class Response : public HttpMessage {
 	public:
@@ -26,12 +27,20 @@ class Response : public HttpMessage {
 		std::string const&	getStatusCode(void) const;
 		std::string const&	getStatusMessage(void) const;
 		std::string const&	getHttpVersion(void) const;
+		CgiHandler*			getCgiHandler(void);
+		int					getClientFd(void) const;
 
 		void				setStatusCode(std::string const& statusCode);
 		void				setStatusCode(int statusCode);
 		void				setStatusMessage(std::string const& statusMessage);
 		void				setStatusMessageFromCode(int statusCode);
 		void				setHttpVersion(std::string const& httpVersion);
+		void				setCgiHandler(std::string const& path, std::string const& cgiExecutor);
+		void				setClientFd(int fd);
+
+		bool				hasCgiHandler(void) const;
+		void				killCgiHandler(void);
+
 
 	private:
 		virtual	void		parseStartLine(void);
@@ -40,6 +49,9 @@ class Response : public HttpMessage {
 		std::string			statusCode_;
 		std::string			statusMessage_;
 		std::string			httpVersion_;
+
+		CgiHandler			*cgiHandler_;
+		int					clientFd_;
 };
 
 #endif

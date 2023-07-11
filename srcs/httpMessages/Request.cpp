@@ -156,7 +156,7 @@ std::vector<Request*> parseMultipleRequest(std::string const& allMsgs) {
 		} else if (tmp == "\r") {
 			if (contentLength > 0) {
 				std::string body;
-				std::getline(iss, body);
+				std::getline(iss, body, '\0');
 				reqStr += body;
 				contentLength = 0;
 			}
