@@ -35,6 +35,9 @@ class CgiHandler {
 		std::vector<char*> const&	getEnv(void) const;
 		std::string	const&			getCgiPath(void) const;
 
+		void						addEnvEntry(std::string const& envEntry);
+		void						setCgiPath(std::string const& path);
+
 	private:
 		CgiHandler(void);
 		pid_t				pid_;

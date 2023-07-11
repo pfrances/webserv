@@ -181,6 +181,7 @@ void	Response::setCgiHandler(std::string const& path, std::string const& cgiExec
 		delete this->cgiHandler_;
 	}
 	this->cgiHandler_ = new CgiHandler(path, cgiExecutor);
+	this->cgiHandler_->executeCgi();
 }
 
 void	Response::killCgiHandler(void) {

@@ -372,7 +372,7 @@ Response*	Server::handleDeleteRequest(Request const& req, Location *location) co
 }
 
 Response*	Server::handleCgiRequest(Request const& req, Location *location) const {
-	std::string path =  location->getRoot() + req.getUri() + location->getIndex().at(0);
+	std::string path =  location->getRoot() + req.getUri() + "/" + location->getIndex().at(0);
 	Response *res = new Response();
 	res->setCgiHandler(path, location->getCgiExecutor().at(0));
 	return res;

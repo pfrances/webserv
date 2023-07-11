@@ -146,7 +146,6 @@ void	ServerMonitor::handleClientRequest(int fd) {
 	for (; it != ite; it++) {
 		Request *req = *it;
 		Server *server = this->clientsMap_[fd];
-		std::cout << req->getRawMessage() << std::endl;
 		while (req->isFetched() == false) {
 			std::string msg = this->recvMsg(fd);
 			req->appendToBody(msg);
@@ -156,6 +155,8 @@ void	ServerMonitor::handleClientRequest(int fd) {
 		if (res) {
 			if (res->hasCgiHandler()) {
 				int cgiFd = res->getCgiHandler()->getPipeReadFd();
+				std::cout << res->getCgiHandler() << std::endl;
+				std::cout << cgiFd << std::endl;
 				this->addNewPollfd(cgiFd, POLLIN);
 				this->cgiResponsesMap_[cgiFd] = res;
 				res->setClientFd(fd);
@@ -172,16 +173,16 @@ void	ServerMonitor::handleCgiResponse(int fd) {
 	Response *res = this->cgiResponsesMap_[fd];
 	
 	std::string msg = this->readPipe(fd);
+
 	res->killCgiHandler();
 	if (msg.empty()) {
 		return ;
 	}
 
 	res->setRawMessage(msg);
-	this->responsesMap_[fd] = res;
-	this->cgiResponsesMap_.erase(fd);
+	this->responsesMap_[res->getClientFd()] = res;
 	this->addEventToPolfd(res->getClientFd(), POLLOUT);
-	this->RemoveEventToPolfd(fd, POLLIN);
+	this->closeConnection(fd);
 }
 
 void	ServerMonitor::handleResponseToSend(int fd) {
@@ -207,7 +208,7 @@ void	ServerMonitor::run(void) {
 
 		std::vector<pollfd>::iterator it = pollfdsVec_.begin();
 		std::vector<pollfd>::iterator ite = pollfdsVec_.end();
-		for (; it != ite; it++) {
+		for (;it != ite; it++) {
 			try {
 				if (it->revents & (POLLHUP | POLLERR | POLLNVAL)) {
 					this->closeConnection(it->fd);
@@ -222,6 +223,7 @@ void	ServerMonitor::run(void) {
 						this->handleClientRequest(it->fd);
 					} else if (this->cgiResponsesMap_.find(it->fd) != this->cgiResponsesMap_.end()) {
 						this->handleCgiResponse(it->fd);
+						continue;
 					}
 				}
 				if (it->revents & POLLOUT) {
@@ -243,7 +245,7 @@ void	ServerMonitor::closeConnection(int fd) {
 		if (it->fd == fd) {
 			pollfdsVec_.erase(it);
 			close(fd);
-			break ;
+			break;
 		}
 	}
 
@@ -254,6 +256,10 @@ void	ServerMonitor::closeConnection(int fd) {
 	if (this->responsesMap_.find(fd) != this->responsesMap_.end()) {
 		delete this->responsesMap_[fd];
 		this->responsesMap_.erase(fd);
+	}
+
+	if (this->cgiResponsesMap_.find(fd) != this->cgiResponsesMap_.end()) {
+		this->cgiResponsesMap_.erase(fd);
 	}
 }
 
