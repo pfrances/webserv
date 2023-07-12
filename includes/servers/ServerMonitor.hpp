@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 15:00:29 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/11 19:55:37 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/12 16:43:42 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,6 @@
 # include <map>
 # include <poll.h>
 # include <stdexcept>
-
 
 class CgiHandler;
 class Response;
@@ -44,7 +43,7 @@ class ServerMonitor
 	private:
 		std::map<int, Server*>		serversMap_;
 		std::map<int, Server*>		clientsMap_;
-		std::map<int, Response*>	cgiResponsesMap_;
+		std::map<int, CgiHandler*>	cgiHandlersMap_;
 		std::map<int, Response*>	responsesMap_;
 		std::vector<pollfd>			pollfdsVec_;
 
@@ -67,6 +66,8 @@ class ServerMonitor
 		void						addEventToPolfd(int fd, short event);
 		void						RemoveEventToPolfd(int fd, short event);
 		void						removePollfd(int fd);
+
+		void						updatePollfdVec(void);
 };
 
 class IoTroubleException : public std::runtime_error {

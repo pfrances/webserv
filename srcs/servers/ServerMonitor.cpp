@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/11 23:27:28 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/12 16:44:53 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,8 +48,8 @@ ServerMonitor::~ServerMonitor(void) {
 		delete itRes->second;
 	}
 
-	std::map<int, Response*>::iterator itCgi = cgiResponsesMap_.begin();
-	std::map<int, Response*>::iterator iteCgi = cgiResponsesMap_.end();
+	std::map<int, CgiHandler*>::iterator itCgi = cgiHandlersMap_.begin();
+	std::map<int, CgiHandler*>::iterator iteCgi = cgiHandlersMap_.end();
 	for(; itCgi != iteCgi; itCgi++) {
 		delete itCgi->second;
 	}
@@ -160,10 +160,12 @@ void	ServerMonitor::handleClientRequest(int fd) {
 		Response *res = server->handleClientRequest(*req);
 		if (res) {
 			if (res->hasCgiHandler()) {
-				int cgiFd = res->getCgiHandler()->getPipeReadFd();
+				CgiHandler *cgi = res->getCgiHandler();
+				int cgiFd = cgi->getPipeReadFd();
 				this->addNewPollfd(cgiFd, POLLIN);
-				this->cgiResponsesMap_[cgiFd] = res;
-				res->setClientFd(fd);
+				this->cgiHandlersMap_[cgiFd] = cgi;
+				cgi->setClientFd(fd);
+				delete res;
 			} else {
 				this->responsesMap_[fd] = res;
 				this->addEventToPolfd(fd, POLLOUT);
@@ -174,19 +176,20 @@ void	ServerMonitor::handleClientRequest(int fd) {
 }
 
 void	ServerMonitor::handleCgiResponse(int fd) {
-	Response *res = this->cgiResponsesMap_[fd];
 
 	std::string msg = this->readPipe(fd);
 
+	CgiHandler *cgi = this->cgiHandlersMap_[fd];
+	int clientFd = cgi->getClientFd();
 	closeConnection(fd);
-	res->killCgiHandler();
+
 	if (msg.empty()) {
 		return ;
 	}
 
-	res->setRawMessage(msg);
-	this->responsesMap_[res->getClientFd()] = res;
-	this->addEventToPolfd(res->getClientFd(), POLLOUT);
+	Response *res = new Response(msg);
+	this->responsesMap_[clientFd] = res;
+	this->addEventToPolfd(clientFd, POLLOUT);
 }
 
 void	ServerMonitor::handleResponseToSend(int fd) {
@@ -202,39 +205,36 @@ void	ServerMonitor::handleResponseToSend(int fd) {
 	this->responsesMap_.erase(fd);
 }
 
-void	ServerMonitor::run(void) {
+void ServerMonitor::run() {
 	this->setServersStartListen();
-	while (1)
-	{
+	while (1) {
 		if (poll(pollfdsVec_.data(), pollfdsVec_.size(), -1) < 0) {
 			throw std::runtime_error("poll error");
 		}
 
-		std::vector<pollfd>::iterator it = pollfdsVec_.begin();
-		std::vector<pollfd>::iterator ite = pollfdsVec_.end();
-		for (; it != ite; it++) {
+		for (size_t i = 0; i < pollfdsVec_.size(); i++) {
 			try {
-				if (it->revents & (POLLHUP | POLLERR | POLLNVAL)) {
-					this->closeConnection(it->fd);
+				if (pollfdsVec_[i].revents & (POLLHUP | POLLERR | POLLNVAL)) {
+					this->closeConnection(pollfdsVec_[i].fd);
 				}
-				if (it->revents & POLLIN) {
-					if (it->fd == STDIN_FILENO) {
+				if (pollfdsVec_[i].revents & POLLIN) {
+					if (pollfdsVec_[i].fd == STDIN_FILENO) {
 						this->handleUserInput();
-					} else if (this->serversMap_.find(it->fd) != this->serversMap_.end()) {
-						this->handleNewConnection(it->fd);
-					} else if (this->clientsMap_.find(it->fd) != this->clientsMap_.end()) {
-						this->handleClientRequest(it->fd);
-					} else if (this->cgiResponsesMap_.find(it->fd) != this->cgiResponsesMap_.end()) {
-						this->handleCgiResponse(it->fd);
+					} else if (this->serversMap_.find(pollfdsVec_[i].fd) != this->serversMap_.end()) {
+						this->handleNewConnection(pollfdsVec_[i].fd);
+					} else if (this->clientsMap_.find(pollfdsVec_[i].fd) != this->clientsMap_.end()) {
+						this->handleClientRequest(pollfdsVec_[i].fd);
+					} else if (this->cgiHandlersMap_.find(pollfdsVec_[i].fd) != this->cgiHandlersMap_.end()) {
+						this->handleCgiResponse(pollfdsVec_[i].fd);
 					}
 				}
-				if (it->revents & POLLOUT) {
-					if (this->clientsMap_.find(it->fd) != this->clientsMap_.end()) {
-						this->handleResponseToSend(it->fd);
+				if (pollfdsVec_[i].revents & POLLOUT) {
+					if (this->clientsMap_.find(pollfdsVec_[i].fd) != this->clientsMap_.end()) {
+						this->handleResponseToSend(pollfdsVec_[i].fd);
 					}
 				}
 			} catch (IoTroubleException &e) {
-				this->closeConnection(it->fd);
+				this->closeConnection(pollfdsVec_[i].fd);
 			}
 		}
 	}
@@ -248,13 +248,14 @@ void	ServerMonitor::closeConnection(int fd) {
 		this->clientsMap_.erase(fd);
 	}
 
+	if (this->cgiHandlersMap_.find(fd) != this->cgiHandlersMap_.end()) {
+		delete this->cgiHandlersMap_[fd];
+		this->cgiHandlersMap_.erase(fd);
+	}
+
 	if (this->responsesMap_.find(fd) != this->responsesMap_.end()) {
 		delete this->responsesMap_[fd];
 		this->responsesMap_.erase(fd);
-	}
-
-	if (this->cgiResponsesMap_.find(fd) != this->cgiResponsesMap_.end()) {
-		this->cgiResponsesMap_.erase(fd);
 	}
 }
 

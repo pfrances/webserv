@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:44:51 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/11 23:45:49 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/12 17:43:21 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,52 +16,44 @@
 #include <signal.h>
 #include <iostream>
 
-CgiHandler::CgiHandler(void) :	pid_(-1),
-								cgiPath_(""),
-								pipe_(),
-								env_() {
+CgiHandler::CgiHandler(void) : pid_(-1), cgiPath_(""), cgiExecutor_(""), pipe_(), envVec_(), argsVec_() {
 	pipe_[0] = -1;
 	pipe_[1] = -1;
-	this->env_.push_back(NULL);
 }
 
-CgiHandler::CgiHandler(std::string const& cgiPath, std::string const& cgiExecutor) :	pid_(-1),
-																						cgiPath_(cgiPath),
-																						cgiExecutor_(cgiExecutor),
-																						pipe_(),
-																						env_() {
+CgiHandler::CgiHandler(std::string const& cgiPath, std::string const& cgiExecutor)
+	: pid_(-1), cgiPath_(cgiPath), cgiExecutor_(cgiExecutor), pipe_(), envVec_(), argsVec_() {
 	pipe_[0] = -1;
 	pipe_[1] = -1;
-	this->env_.push_back(NULL);
+	if (!cgiExecutor_.empty()) {
+		// if (cgiExecutor_.at(0) != '/' && cgiExecutor_.at(0) != '.') {
+		// 	this->argsVec_.push_back("./" + cgiExecutor_);
+		// } else {
+		// 	this->argsVec_.push_back(cgiExecutor_);
+		// }
+		this->argsVec_.push_back(cgiExecutor_);
+
+	}
+	this->argsVec_.push_back(cgiPath);
 }
 
-CgiHandler::CgiHandler(std::string const& cgiPath,
-						std::vector<char*> const& env) :	pid_(-1),
-															cgiPath_(cgiPath),
-															pipe_(),
-															env_(env) {
-	pipe_[0] = -1;
-	pipe_[1] = -1;
-	this->env_.push_back(NULL);
-}
-
-CgiHandler::CgiHandler(CgiHandler const& other) :	pid_(other.pid_),
-													cgiPath_(other.cgiPath_),
-													env_(other.env_) {
+CgiHandler::CgiHandler(CgiHandler const& other)
+	: pid_(other.pid_), cgiPath_(other.cgiPath_), cgiExecutor_(other.cgiExecutor_), envVec_(other.envVec_), argsVec_(other.argsVec_) {
 	pipe_[0] = other.pipe_[0];
 	pipe_[1] = other.pipe_[1];
-	this->env_.push_back(NULL);
 }
 
-CgiHandler&	CgiHandler::operator=(CgiHandler const& other) {
+CgiHandler &CgiHandler::operator=(CgiHandler const& other) {
 	if (this != &other) {
 		pid_ = other.pid_;
 		cgiPath_ = other.cgiPath_;
+		cgiExecutor_ = other.cgiExecutor_;
 		pipe_[0] = other.pipe_[0];
 		pipe_[1] = other.pipe_[1];
-		env_ = other.env_;
+		envVec_ = other.envVec_;
+		argsVec_ = other.argsVec_;
 	}
-	return (*this);
+	return *this;
 }
 
 CgiHandler::~CgiHandler(void) {
@@ -71,72 +63,76 @@ CgiHandler::~CgiHandler(void) {
 	if (pipe_[1] != -1) {
 		close(pipe_[1]);
 	}
-	kill(pid_, SIGKILL);
-	waitpid(pid_, NULL, 0);
-}
-
-pid_t const&	CgiHandler::getPid(void) const {
-	return (this->pid_);
-}
-
-int	CgiHandler::getPipeReadFd(void) const {
-	return (this->pipe_[0]);
-}
-
-int	CgiHandler::getPipeWriteFd(void) const {
-	return (this->pipe_[1]);
-}
-
-std::vector<char*> const&	CgiHandler::getEnv(void) const {
-	return (this->env_);
-}
-
-std::string	const&	CgiHandler::getCgiPath(void) const {
-	return (this->cgiPath_);
-}
-
-void	CgiHandler::setCgiPath(std::string const& path) {
-	this->cgiPath_ = path;
-}
-
-void	CgiHandler::addEnvEntry(std::string const& envEntry) {
-	std::vector<char*>::iterator it = this->env_.begin();
-	std::vector<char*>::iterator ite = this->env_.end();
-	for (; it != ite; it++) {
-		if (*it == NULL) {
-			*it = const_cast<char*>(envEntry.c_str());
-			break;
-		}
+	if (pid_ != -1) {
+		kill(pid_, SIGKILL);
+		waitpid(pid_, NULL, 0);
 	}
-	this->env_.push_back(NULL);
 }
 
-void	CgiHandler::executeCgi(void) {
-	if (pipe(this->pipe_) == -1) {
+pid_t const& CgiHandler::getPid(void) const {
+	return pid_;
+}
+
+int CgiHandler::getPipeReadFd(void) const {
+	return pipe_[0];
+}
+
+int CgiHandler::getPipeWriteFd(void) const {
+	return pipe_[1];
+}
+
+std::vector<std::string> const& CgiHandler::getEnv(void) const {
+	return envVec_;
+}
+
+std::string const& CgiHandler::getCgiPath(void) const {
+	return cgiPath_;
+}
+
+int CgiHandler::getClientFd(void) const {
+	return clientFd_;
+}
+
+void CgiHandler::setCgiPath(std::string const& path) {
+	cgiPath_ = path;
+}
+
+void	CgiHandler::setClientFd(int fd) {
+	this->clientFd_ = fd;
+}
+
+void CgiHandler::executeCgi(void) {
+	if (pipe(pipe_) < 0) {
 		throw std::runtime_error("pipe error");
 	}
-	std::vector<char*> args;
-	if (!this->cgiExecutor_.empty()) {
-		args.push_back(const_cast<char*>(this->cgiExecutor_.c_str()));
-	}
-	args.push_back(const_cast<char*>(this->cgiPath_.c_str()));
-	args.push_back(NULL);
 
-	this->pid_ = fork();
-	if (this->pid_ == -1) {
+	pid_ = fork();
+	if (pid_ == 0) {
+		dup2(pipe_[0], STDIN_FILENO);
+		dup2(pipe_[1], STDOUT_FILENO);
+		close(pipe_[1]);
+		close(pipe_[0]);
+		char *const *args = StringVecToCharPtrArray(this->argsVec_);
+		char *const *env = StringVecToCharPtrArray(this->envVec_);
+
+		if (execve(args[0], args, env) < 0) {
+			delete[] args;
+			delete[] env;
+			throw std::runtime_error("execve error");
+		}
+	} else if (pid_ > 0) {
+		close(pipe_[1]);
+		pipe_[1] = -1;
+	} else {
 		throw std::runtime_error("fork error");
 	}
+}
 
-	if (this->pid_ == 0) {
-		dup2(this->pipe_[0], STDIN_FILENO);
-		dup2(this->pipe_[1], STDOUT_FILENO);
-		close(this->pipe_[1]);
-		close(this->pipe_[0]);
-
-		if (execve(args.at(0), args.data(), this->env_.data()) < 0) {
-			std::exit(1);
-		}
+char *const*	CgiHandler::StringVecToCharPtrArray(std::vector<std::string> const& vec) const {
+	char **ret = new char*[vec.size() + 1];
+	for (size_t i = 0; i < vec.size(); ++i) {
+		ret[i] = const_cast<char *>(vec.at(i).c_str());
 	}
-	close(this->pipe_[1]);
-	this->pipe_[1] = -1;
+	ret[vec.size()] = NULL;
+	return ret;
 }

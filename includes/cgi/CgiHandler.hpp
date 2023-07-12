@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:45:00 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/01 19:37:27 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/12 16:30:41 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,30 +22,33 @@
 class CgiHandler {
 	public:
 		CgiHandler(std::string const& cgiPath, std::string const& cgiExecutor);
-		CgiHandler(std::string const& cgiPath, std::vector<char*> const& env);
 		CgiHandler(CgiHandler const& other);
 		CgiHandler &operator=(CgiHandler const& other);
 		~CgiHandler(void);
 
-		void						executeCgi(void);
+		void							executeCgi(void);
 
-		pid_t const&				getPid(void) const;
-		int							getPipeReadFd(void) const;
-		int							getPipeWriteFd(void) const;
-		std::vector<char*> const&	getEnv(void) const;
-		std::string	const&			getCgiPath(void) const;
+		pid_t const&					getPid(void) const;
+		int								getPipeReadFd(void) const;
+		int								getPipeWriteFd(void) const;
+		std::vector<std::string> const&	getEnv(void) const;
+		std::string	const&				getCgiPath(void) const;
+		int								getClientFd(void) const;
 
-		void						addEnvEntry(std::string const& envEntry);
-		void						setCgiPath(std::string const& path);
+		void							setCgiPath(std::string const& path);
+		void							setClientFd(int fd);
 
 	private:
 		CgiHandler(void);
-		pid_t				pid_;
-		std::string			cgiPath_;
-		std::string			cgiExecutor_;
-		int					pipe_[2];
-		std::vector<char*>	env_;
+		pid_t						pid_;
+		std::string					cgiPath_;
+		std::string					cgiExecutor_;
+		int							pipe_[2];
+		std::vector<std::string>	envVec_;
+		std::vector<std::string>	argsVec_;
+		int							clientFd_;
 
+		char *const*				StringVecToCharPtrArray(std::vector<std::string> const& vec) const;
 };
 
 #endif

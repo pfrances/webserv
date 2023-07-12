@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:23:49 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/10 17:02:29 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/12 17:32:51 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,6 +43,7 @@ Location::Location(std::string const& locationConf,
 												cgiExtensions_(std::vector<std::string>()),
 												clientMaxBodySize_(1024),
 												autoIndex_(false) {
+	allowedMethods_.push_back("GET");
 	this->parseLocationConf(locationConf);
 }
 
@@ -117,6 +118,17 @@ std::vector<std::string> const& Location::getCgiExtensions(void) const {
 	return (this->cgiExtensions_);
 }
 
+std::string const&	Location::getCgiExecutorByExtension(std::string const& extension) const {
+	std::vector<std::string> const& extensionVec =  this->getCgiExtensions();
+	std::vector<std::string> const& executorVec =  this->getCgiExecutor();
+	for (size_t i = 0; i < executorVec.size() && i < extensionVec.size(); i++) {
+		if (extensionVec[i] == extension) {
+			return executorVec[i];
+		}
+	}
+	return executorVec.back();
+}
+
 size_t Location::getClientMaxBodySize(void) const {
 	return (this->clientMaxBodySize_);
 }
@@ -156,6 +168,10 @@ bool	Location::isDeleteAllowed(void) const {
 		}
 	}
 	return false;
+}
+
+bool	Location::isCgiLocation(void) const {
+	return !this->getCgiExecutor().empty() && !this->getCgiExtensions().empty();
 }
 
 void Location::setPath(std::string const& path) {
@@ -224,6 +240,7 @@ void Location::addAllowedMethods(std::string const& allowedMethods) {
 
 void Location::setCgiExecutor(std::vector<std::string> const& cgiExecutor) {
 	this->cgiExecutor_ = cgiExecutor;
+	this->cgiExecutor_.push_back("");
 }
 
 void Location::addCgiExecutor(std::string const& cgiExecutor) {
@@ -232,6 +249,7 @@ void Location::addCgiExecutor(std::string const& cgiExecutor) {
 
 void Location::setCgiExtension(std::vector<std::string> const& cgiExtension) {
 	this->cgiExtensions_ = cgiExtension;
+	this->cgiExtensions_.push_back("");
 }
 
 void Location::addCgiExtension(std::string const& cgiExtension) {

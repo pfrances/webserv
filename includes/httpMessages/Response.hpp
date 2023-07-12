@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:20:20 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/29 13:13:16 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/12 17:02:33 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,8 +39,6 @@ class Response : public HttpMessage {
 		void				setClientFd(int fd);
 
 		bool				hasCgiHandler(void) const;
-		void				killCgiHandler(void);
-
 
 	private:
 		virtual	void		parseStartLine(void);
@@ -51,7 +49,6 @@ class Response : public HttpMessage {
 		std::string			httpVersion_;
 
 		CgiHandler			*cgiHandler_;
-		int					clientFd_;
 };
 
 #endif

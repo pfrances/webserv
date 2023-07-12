@@ -6,13 +6,14 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:21 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/11 22:14:59 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/12 17:03:06 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Response.hpp"
 #include "ParseTools.hpp"
 #include <sstream>
+#include <iostream>
 
 Response::Response(void) :	HttpMessage(),
 							statusCode_(""),
@@ -31,16 +32,14 @@ Response::Response(std::string const& rawResponse) :	HttpMessage(rawResponse),
 }
 
 Response::~Response(void) {
-	if (this->cgiHandler_ != NULL) {
-		delete this->cgiHandler_;
-	}
+
 }
 
 Response::Response(Response const& other) : HttpMessage(other),
 											statusCode_(other.statusCode_),
 											statusMessage_(other.statusMessage_),
 											httpVersion_(other.httpVersion_),
-											cgiHandler_(other.cgiHandler_)  {
+											cgiHandler_(NULL) {
 
 }
 
@@ -50,6 +49,8 @@ Response &Response::operator=(Response const& other) {
 		this->statusCode_ = other.statusCode_;
 		this->statusMessage_ = other.statusMessage_;
 		this->httpVersion_ = other.httpVersion_;
+		if (this->cgiHandler_)
+			delete this->cgiHandler_;
 		this->cgiHandler_ = other.cgiHandler_;
 	}
 	return (*this);
@@ -156,14 +157,6 @@ void	Response::setStatusMessageFromCode(int statusCode) {
 	}
 }
 
-int	Response::getClientFd(void) const {
-	return this->clientFd_;
-}
-
-void	Response::setClientFd(int fd) {
-	this->clientFd_ = fd;
-}
-
 void	Response::setStatusMessage(std::string const& statusMessage) {
 	this->statusMessage_ = statusMessage;
 	this->updateStartLine();
@@ -182,13 +175,6 @@ void	Response::setCgiHandler(std::string const& path, std::string const& cgiExec
 	}
 	this->cgiHandler_ = new CgiHandler(path, cgiExecutor);
 	this->cgiHandler_->executeCgi();
-}
-
-void	Response::killCgiHandler(void) {
-	if (this->cgiHandler_ != NULL) {
-		delete this->cgiHandler_;
-		this->cgiHandler_ = NULL;
-	}
 }
 
 void	Response::parseStartLine(void) {

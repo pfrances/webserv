@@ -200,6 +200,7 @@ Response*	Server::handleError(int statusCode, Location *location) const {
 		res->setSingleHeader("Content-Type", "text/plain");
 		res->setBody("[Error " + res->getStatusCode() + "] " + res->getStatusMessage());
 	}
+
 	return res;
 }
 
@@ -227,9 +228,14 @@ Response*	Server::handleIndexing(File const& file, Request const& req, Location 
 
 	std::vector<std::string>::const_iterator it = location->getIndex().begin();
 	std::vector<std::string>::const_iterator ite = location->getIndex().end();
+	File index;
 	for (; it != ite; it++) {
-		File index(file.getFullPath() + "/" + *it);
-		if (index.isReadable()) {
+		index = File(file.getFullPath() + "/" + *it);
+		if (location->isCgiLocation() && index.exists()) {
+			Response *res = new Response();
+			res->setCgiHandler(index.getFullPath(), location->getCgiExecutorByExtension(index.getExtension()));
+			return res;
+		} else if (index.isReadable()) {
 			std::string const& indexContent = index.getFileContent();
 			Response *res = new Response();
 			res->setStatusCode(200);
@@ -251,12 +257,13 @@ Response*	Server::handleIndexing(File const& file, Request const& req, Location 
 Response*	Server::handleGetRequest(Request const& req, Location *location) const {
 
 	if (location->isGetAllowed() == false) {
-		handleError(405, location);
+		return handleError(405, location);
 	}
 
-	if (location->getPath().find("/cgi-bin") != location->getPath().npos) {
+	if (location->isCgiLocation()) {
 		return this->handleCgiRequest(req, location);
 	}
+
 	std::string const& path = location->getRoot() + req.getUri();
 
 	File file(path);
@@ -372,10 +379,24 @@ Response*	Server::handleDeleteRequest(Request const& req, Location *location) co
 }
 
 Response*	Server::handleCgiRequest(Request const& req, Location *location) const {
-	std::string path =  location->getRoot() + req.getUri() + "/" + location->getIndex().at(0);
-	Response *res = new Response();
-	res->setCgiHandler(path, location->getCgiExecutor().at(0));
-	return res;
+
+	std::string const& path = location->getRoot() + req.getUri();
+	File file(path);
+	if (file.isDirectory() == true) {
+		return this->handleIndexing(file, req, location);
+	}
+
+	std::vector<std::string>::const_iterator it = location->getCgiExtensions().begin();
+	std::vector<std::string>::const_iterator ite = location->getCgiExtensions().end();
+	for (; it != ite; it++) {
+		File cgi(path + *it);
+		if (cgi.exists() == true) {
+			Response *res = new Response();
+			res->setCgiHandler(cgi.getFullPath(), location->getCgiExecutorByExtension(*it));
+			return res;
+		}
+	}
+	return handleError(501, location);
 }
 
 Response*	Server::handleClientRequest(Request const& req) const {

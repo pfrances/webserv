@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 14:20:33 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/01 19:51:04 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/12 16:58:21 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,12 +34,14 @@ public:
 	std::vector<std::string> const&				getAllowedMethods(void) const;
 	std::vector<std::string> const&				getCgiExecutor(void) const;
 	std::vector<std::string> const&				getCgiExtensions(void) const;
+	std::string const&							getCgiExecutorByExtension(std::string const& extension) const;
 	size_t										getClientMaxBodySize(void) const;
 	bool										getAutoIndex(void) const;
 
 	bool										isGetAllowed(void) const;
 	bool										isPostAllowed(void) const;
 	bool										isDeleteAllowed(void) const;
+	bool										isCgiLocation(void) const;
 
 
 	void		setPath(std::string const& path);
@@ -73,6 +75,7 @@ public:
 	void		setAutoIndex(bool directoryListing);
 
 	void		applyDefaultValues(Location const& defaultLocation);
+
 
 private:
 	void parseLocationConf(std::string const& locationConfig);
