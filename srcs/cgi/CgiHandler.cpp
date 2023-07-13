@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:44:51 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/12 17:43:21 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/12 19:13:27 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,13 +26,7 @@ CgiHandler::CgiHandler(std::string const& cgiPath, std::string const& cgiExecuto
 	pipe_[0] = -1;
 	pipe_[1] = -1;
 	if (!cgiExecutor_.empty()) {
-		// if (cgiExecutor_.at(0) != '/' && cgiExecutor_.at(0) != '.') {
-		// 	this->argsVec_.push_back("./" + cgiExecutor_);
-		// } else {
-		// 	this->argsVec_.push_back(cgiExecutor_);
-		// }
 		this->argsVec_.push_back(cgiExecutor_);
-
 	}
 	this->argsVec_.push_back(cgiPath);
 }

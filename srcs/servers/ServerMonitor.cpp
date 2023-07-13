@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/12 16:44:53 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/13 09:48:34 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -312,11 +312,10 @@ void	ServerMonitor::addNewPollfd(int fd, short events) {
 			return ;
 		}
 	}
-	pollfd pollfd;
-	pollfd.fd = fd;
-	pollfd.events = events;
-	pollfd.revents = 0;
-	this->pollfdsVec_.push_back(pollfd);
+	this->pollfdsVec_.push_back(pollfd());
+	this->pollfdsVec_.back().fd = fd;
+	this->pollfdsVec_.back().events = events;
+	this->pollfdsVec_.back().revents = 0;
 }
 
 void	ServerMonitor::removePollfd(int fd) {
