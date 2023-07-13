@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:45 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/13 12:40:38 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/13 16:59:05 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,7 +83,7 @@ bool	Request::isMethodValid(void) const {
 }
 
 bool	Request::isUriValid(void) const {
-	return (this->uri_.size() > 0);
+	return (!this->uri_.empty() && this->uri_.at(0) == '/');
 }
 
 bool	Request::isHttpVersionValid(void) const {

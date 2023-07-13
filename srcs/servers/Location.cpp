@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:23:49 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/13 13:00:40 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/13 18:29:40 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,8 @@ Location::Location(void) :	path_("/"),
 							uploadPath_("./"),
 							index_(),
 							errorPages_(),
-							redirect_(),
+							redirectStatusCode_(-1),
+							redirectUri_(""),
 							allowedMethods_(),
 							cgiExecutor_(),
 							cgiExtensions_(),
@@ -37,7 +38,8 @@ Location::Location(std::string const& locationConf,
 												uploadPath_("./"),
 												index_(),
 												errorPages_(),
-												redirect_(),
+												redirectStatusCode_(-1),
+												redirectUri_(""),
 												allowedMethods_(),
 												cgiExecutor_(),
 												cgiExtensions_(),
@@ -54,7 +56,8 @@ Location::Location(Location const& other) :	path_(other.path_),
 											uploadPath_(other.uploadPath_),
 											index_(other.index_),
 											errorPages_(other.errorPages_),
-											redirect_(other.redirect_),
+											redirectStatusCode_(other.redirectStatusCode_),
+											redirectUri_(other.redirectUri_),
 											allowedMethods_(other.allowedMethods_),
 											cgiExecutor_(other.cgiExecutor_),
 											cgiExtensions_(other.cgiExtensions_),
@@ -70,7 +73,8 @@ Location &Location::operator=(Location const& other) {
 		this->index_ = other.index_;
 		this->uploadPath_ = other.uploadPath_;
 		this->errorPages_ = other.errorPages_;
-		this->redirect_ = other.redirect_;
+		this->redirectUri_ = other.redirectUri_;
+		this->redirectStatusCode_ = other.redirectStatusCode_;
 		this->allowedMethods_ = other.allowedMethods_;
 		this->cgiExecutor_ = other.cgiExecutor_;
 		this->cgiExtensions_ = other.cgiExtensions_;
@@ -104,8 +108,12 @@ std::map<int, std::string> const& Location::getErrorPages(void) const {
 	return (this->errorPages_);
 }
 
-std::map<std::string, std::string> const& Location::getRedirect(void) const {
-	return (this->redirect_);
+std::string const&	Location::getRedirectUri(void) const {
+	return (this->redirectUri_);
+}
+
+int	Location::getRedirectStatusCode(void) const {
+	return (this->redirectStatusCode_);
 }
 
 std::vector<std::string> const& Location::getAllowedMethods(void) const {
@@ -224,12 +232,19 @@ void Location::parseAndAddErrorPages(std::vector<std::string> const& errorPages)
 	}
 }
 
-void Location::setRedirect(std::map<std::string, std::string> const& redirect) {
-	this->redirect_ = redirect;
+void Location::setRedirectUri(std::string const& uri) {
+	if (uri.empty() || (uri.at(0) != '/' && uri.find("http://") != 0)) {
+		throw ConfigurationException("[Configuration Location] " + this->getPath() + ": invalid redirection path");
+	}
+	this->redirectUri_ = uri;
 }
 
-void Location::addRedirect(std::string const& redirect, std::string const& redirectPath) {
-	this->redirect_.insert(std::pair<std::string, std::string>(redirect, redirectPath));
+void	Location::setRedirectStatusCode(int statusCode) {
+	if (statusCode != 300 && statusCode != 301 && statusCode != 302 && statusCode != 303
+		&& statusCode != 304 && statusCode != 307 && statusCode != 308) {
+			throw ConfigurationException("[Configuration Location] " + this->getPath() + ": invalid return code");
+	}
+	this->redirectStatusCode_ = statusCode;
 }
 
 void Location::setAllowedMethods(std::vector<std::string> const& allowedMethods) {
@@ -327,7 +342,7 @@ void Location::setAutoIndex(bool autoIndex) {
 void Location::parseLocationConf(std::string const& locationBlock) {
 	std::string::const_iterator	it = locationBlock.begin();
 
-	std::vector<std::string> tokensVector;
+	std::vector<std::string> tokensVec;
 	std::string token = ParseTools::getNextToken(locationBlock, it);
 	while (token.empty() == false) {
 		if (token == "root") {
@@ -337,26 +352,27 @@ void Location::parseLocationConf(std::string const& locationBlock) {
 				throw ConfigurationException("Location [" + this->path_ + "]: root: no semicolon.");
 			}
 		} else if (token == "index") {
-			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
-			this->setIndex(tokensVector);
+			tokensVec = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
+			this->setIndex(tokensVec);
 		} else if (token == "error_page") {
-			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
-			this->parseAndAddErrorPages(tokensVector);
-		} else if (token == "redirect") {
-			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
-			if (tokensVector.size() != 2) {
-				throw ConfigurationException("Location [" + this->path_ + "]: redirect: invalid number of arguments.");
+			tokensVec = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
+			this->parseAndAddErrorPages(tokensVec);
+		} else if (token == "return") {
+			tokensVec = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
+			if (tokensVec.size() != 2) {
+				throw ConfigurationException("Location [" + this->path_ + "]: return: invalid number of arguments.");
 			}
-			this->addRedirect(tokensVector[0], tokensVector[1]);
+			this->setRedirectStatusCode(ParseTools::stringToInt(tokensVec[0]));
+			this->setRedirectUri(tokensVec[1]);
 		} else if (token == "allow_methods") {
-			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
-			this->setAllowedMethods(tokensVector);
+			tokensVec = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
+			this->setAllowedMethods(tokensVec);
 		} else if (token == "cgi_executor") {
-			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
-			this->setCgiExecutor(tokensVector);
+			tokensVec = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
+			this->setCgiExecutor(tokensVec);
 		} else if (token == "cgi_ext") {
-			tokensVector = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
-			this->setCgiExtension(tokensVector);
+			tokensVec = ParseTools::getAllTokensUntilSemicolon(locationBlock, it);
+			this->setCgiExtension(tokensVec);
 		} else if (token == "client_max_body_size") {
 			token = ParseTools::getNextToken(locationBlock, it);
 			this->setClientMaxBodySize(token);
@@ -401,8 +417,11 @@ void	Location::applyDefaultValues(Location const& defaultLocation) {
 	if (this->errorPages_.empty()) {
 		this->errorPages_ = defaultLocation.errorPages_;
 	}
-	if (this->redirect_.empty()) {
-		this->redirect_ = defaultLocation.redirect_;
+	if (this->redirectStatusCode_ < 0) {
+		this->redirectStatusCode_ = defaultLocation.redirectStatusCode_;
+	}
+	if (this->redirectUri_.empty()) {
+		this->redirectUri_ = defaultLocation.redirectUri_;
 	}
 	if (this->allowedMethods_.size() == 1 && this->allowedMethods_.front() == "GET") {
 		this->allowedMethods_ = defaultLocation.allowedMethods_;

@@ -7,12 +7,13 @@
 		function sendDeleteRequest() {
 			var key = document.getElementById('delete-key').value;
 
-			fetch('/delete?key=' + encodeURIComponent(key), {
+			fetch('/delete/upload.log?key=' + encodeURIComponent(key), {
 				method: 'DELETE',
 			})
 				.then(response => {
-					if (response.ok) {
+					if (response.ok || response.redirected) {
 						console.log('Ressource deleted!');
+						window.location.href = response.url;
 					} else {
 						console.log('Something went wrong!');
 					}
@@ -27,7 +28,7 @@
 	<h1>Upload</h1>
 
 	<h2>POST Request</h2>
-	<form action="/post" method="POST">
+	<form action="/post/upload.log" method="POST">
 		<label for="post-key">Key :</label>
 		<input type="text" id="post-key" name="key" required><br>
 
@@ -49,18 +50,18 @@
 		<input type="file" id="file-input" name="file">
 		<button type="submit">Upload</button>
 	  </form>
-	
+
 	  <script>
 		document.getElementById('upload-form').addEventListener('submit', function(event) {
 		  event.preventDefault();
-	
+
 		  const formData = new FormData();
 		  const fileInput = document.getElementById('file-input');
 		  const file = fileInput.files[0];
-	
+
 		  if (file) {
 			formData.append('file', file);
-	
+
 			fetch('/post', {
 			  method: 'POST',
 			  body: formData

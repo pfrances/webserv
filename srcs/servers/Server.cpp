@@ -144,7 +144,7 @@ void	Server::startListen(void) {
 void	Server::parseServerConf(std::string const& serverConf) {
 	std::string::const_iterator	it = serverConf.begin();
 
-	Location defaultLocation;
+	Location *defaultLocation = new Location();
 	std::vector<std::string> tokensVec;
 	std::string token = ParseTools::getNextToken(serverConf, it);
 	while (token.empty() == false) {
@@ -162,32 +162,39 @@ void	Server::parseServerConf(std::string const& serverConf) {
 			}
 		} else if (token == "error_page") {
 			tokensVec = ParseTools::getAllTokensUntilSemicolon(serverConf, it);
-			defaultLocation.parseAndAddErrorPages(tokensVec);
+			defaultLocation->parseAndAddErrorPages(tokensVec);
 		} else if (token == "location") {
 			token = ParseTools::getNextToken(serverConf, it);
 			std::string locationBlock = ParseTools::extractBlock(serverConf, it);
 			this->addLocation(new Location(locationBlock, token));
 		} else if (token == "client_body_size") {
 			token = ParseTools::getNextToken(serverConf, it);
-			defaultLocation.setClientMaxBodySize(token);
+			defaultLocation->setClientMaxBodySize(token);
 			if (ParseTools::getNextToken(serverConf, it) != ";") {
 				throw ConfigurationException("[Configuration Server] client_body_size: no semicolon.");
 			}
 		} else if (token == "index") {
 			tokensVec = ParseTools::getAllTokensUntilSemicolon(serverConf, it);
-			defaultLocation.setIndex(tokensVec);
+			defaultLocation->setIndex(tokensVec);
+		} else if (token == "return") {
+			tokensVec = ParseTools::getAllTokensUntilSemicolon(serverConf, it);
+			if (tokensVec.size() != 2) {
+				throw ConfigurationException("Server [" + this->serverName_ + "]: return: invalid number of arguments.");
+			}
+			defaultLocation->setRedirectStatusCode(ParseTools::stringToInt(tokensVec[0]));
+			defaultLocation->setRedirectUri(tokensVec[1]);
 		} else if (token == "root") {
 			token = ParseTools::getNextToken(serverConf, it);
-			defaultLocation.setRoot(token);
+			defaultLocation->setRoot(token);
 			if (ParseTools::getNextToken(serverConf, it) != ";") {
 				throw ConfigurationException("[Configuration Server] root: no semicolon.");
 			}
 		} else if (token == "autoindex") {
 				token = ParseTools::getNextToken(serverConf, it);
 			if (token == "on") {
-				defaultLocation.setAutoIndex(true);
+				defaultLocation->setAutoIndex(true);
 			} else if (token == "off") {
-				defaultLocation.setAutoIndex(false);
+				defaultLocation->setAutoIndex(false);
 			} else {
 				throw ConfigurationException("[Configuration Server] autoindex: invalid argument.");
 			}
@@ -204,10 +211,12 @@ void	Server::parseServerConf(std::string const& serverConf) {
 	std::map<std::string, Location*>::iterator iteLoc = this->locationsMap_.end();
 	for (; itLoc != iteLoc; itLoc++) {
 		Location* location = itLoc->second;
-		location->applyDefaultValues(defaultLocation);
+		location->applyDefaultValues(*defaultLocation);
 	}
 	if (this->locationsMap_.find("/") == iteLoc) {
-		this->addLocation(new Location(defaultLocation));
+		this->addLocation(defaultLocation);
+	} else {
+		delete defaultLocation;
 	}
 }
 
@@ -285,6 +294,10 @@ Response*	Server::handleGetRequest(Request const& req, Location *location) const
 		return handleError(405, location);
 	}
 
+	if (location->getRedirectStatusCode() > 0) {
+		return (handleRedirection(req, location));
+	}
+
 	if (location->isCgiLocation()) {
 		return this->handleCgiRequest(req, location);
 	}
@@ -318,7 +331,7 @@ Response*	Server::handleLogPostRequest(Request const& req, Location *location) c
 		return handleError(413, location);
 	}
 
-	std::string const& log_path = location->getUploadPath() + "/upload.log";
+	std::string const& log_path = location->getUploadPath() + req.getUri().substr(location->getPath().length());
 	std::map<std::string, std::string> queryMap = ParseTools::parseQuery(body);
 	std::map<std::string, std::string>::const_iterator it = queryMap.begin();
 	try {
@@ -332,7 +345,11 @@ Response*	Server::handleLogPostRequest(Request const& req, Location *location) c
 	} catch (std::exception& e) {
 		return handleError(500, location);
 	}
+	if (location->getRedirectStatusCode() > 0) {
+		return (handleRedirection(req, location));
+	}
 	Response *res = new Response();
+
 	res->setStatusCode(201);
 	std::string resBody =\
 "<!DOCTYPE html>\n\
@@ -342,7 +359,6 @@ Response*	Server::handleLogPostRequest(Request const& req, Location *location) c
 	</head>\n\
 	<body>\n\
  		<h1>Resource created successfully</h1>\n\
-	<p>The resource has been created at <a href=\"/upload/upload.log\">here</a>.</p>\n\
 	</body>\n\
 </html>";
 	res->setMimeByExtension("html");
@@ -375,7 +391,7 @@ Response*	Server::handleDeleteRequest(Request const& req, Location *location) co
 		return handleError(413, location);
 	}
 
-	std::string const& log_path = location->getUploadPath() + "/upload.log";
+	std::string const& log_path = location->getUploadPath() + req.getUri().substr(location->getPath().length());
 	std::map<std::string, std::string>::const_iterator it = req.getQuery().begin();
 	try {
 		File file(log_path);
@@ -385,6 +401,11 @@ Response*	Server::handleDeleteRequest(Request const& req, Location *location) co
 	} catch (std::exception& e) {
 		return handleError(500, location);
 	}
+
+	if (location->getRedirectStatusCode() > 0) {
+		return (handleRedirection(req, location));
+	}
+
 	Response *res = new Response();
 	res->setStatusCode(204);
 	std::string resBody =\
@@ -395,7 +416,6 @@ Response*	Server::handleDeleteRequest(Request const& req, Location *location) co
 	</head>\n\
 	<body>\n\
  		<h1>Resource deleted successfully</h1>\n\
-	<p>The resource has been deleted from <a href=\"/upload/upload.log\">here</a>.</p>\n\
 	</body>\n\
 </html>";
 	res->setMimeByExtension("html");
@@ -424,9 +444,29 @@ Response*	Server::handleCgiRequest(Request const& req, Location *location) const
 	return handleError(501, location);
 }
 
+Response *Server::handleRedirection(Request const& req, Location *location) const {
+	std::string uri = req.getUri().substr(location->getPath().length());
+	if (!uri.empty() && uri.at(0) == '/') {
+		uri = uri.substr(1);
+	}
+
+	std::string redirect = location->getRedirectUri();
+	size_t pos = 0;
+	while ((pos = redirect.find("$")) != std::string::npos) {
+		redirect.replace(pos, redirect.length(), uri);
+		pos++;
+	}
+
+	Response *res = new Response();
+	res->setStatusCode(location->getRedirectStatusCode());
+	res->setSingleHeader("Location", redirect);
+	res->setBody("");
+	return res;
+}
+
 Response*	Server::handleClientRequest(Request const& req) {
 
-	std::cout << req.getStartLine() << std::endl;
+	std::cout << req.getHostName() << " " << req.getStartLine() << std::endl;
 	if (req.isRequestValid() == false) {
 		return this->handleError(400, this->locationsMap_.find("/")->second);
 	}

@@ -66,6 +66,8 @@ class Server {
 
 		Response*				handleCgiRequest(Request const& req, Location *location) const;
 
+		Response*				handleRedirection(Request const& req, Location *location) const;
+
 		std::string				serverName_;
 		std::string				host_;
 		int						port_;

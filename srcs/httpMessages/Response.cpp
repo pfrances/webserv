@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:21 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/12 17:03:06 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/13 15:41:01 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -114,6 +114,8 @@ void	Response::setStatusMessageFromCode(int statusCode) {
 		this->statusMessage_ = "Moved Permanently";
 	} else if (statusCode == 302) {
 		this->statusMessage_ = "Found";
+	} else if (statusCode == 303) {
+		this->statusMessage_ = "See Other";
 	} else if (statusCode == 304) {
 		this->statusMessage_ = "Not Modified";
 	} else if (statusCode == 307) {

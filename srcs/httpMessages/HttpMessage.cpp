@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 12:27:17 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/13 12:44:54 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/13 18:06:50 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -172,11 +172,10 @@ void	HttpMessage::parseRawMessage() {
 	}
 	this->parseHeadersMap();
 
-	if (this->headersMap_.find("Content-Length") != this->headersMap_.end()) {
-		std::string body;
-		std::getline(iss, body, '\0');
+	std::string body;
+	std::getline(iss, body, '\0');
+	if (!body.empty())
 		this->parseBody(body);
-	}
 }
 
 std::pair<std::string, std::string>	HttpMessage::parseSingleHeader(std::string const& header) {
@@ -201,10 +200,13 @@ void	HttpMessage::parseHeadersMap(void) {
 }
 
 void	HttpMessage::parseBody(std::string const& body) {
-	this->totalSize_ = ParseTools::stringToInt(this->getSingleHeader("Content-Length"));
+
+	if (this->headersMap_.find("Content-Length") != this->headersMap_.end()) {
+		this->totalSize_ = ParseTools::stringToInt(this->getSingleHeader("Content-Length"));
+	}
 	std::string const& contentType = this->getSingleHeader("Content-Type");
 
-	if (contentType.find("multipart/form-data") != contentType.npos) {
+	if (contentType.find("multipart/form-data") != std::string::npos) {
 		this->boundary_ = contentType.substr(contentType.find("bundary=") + 8);
 		this->chunksFetched_ = false;
 		if (body.length() > 0) {

@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 14:20:33 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/12 16:58:21 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/13 15:33:19 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,8 @@ public:
 	std::string const&							getUploadPath(void) const;
 	std::vector<std::string> const&				getIndex(void) const;
 	std::map<int, std::string> const&			getErrorPages(void) const;
-	std::map<std::string, std::string> const&	getRedirect(void) const;
+	std::string const&							getRedirectUri(void) const;
+	int											getRedirectStatusCode(void) const;
 	std::vector<std::string> const&				getAllowedMethods(void) const;
 	std::vector<std::string> const&				getCgiExecutor(void) const;
 	std::vector<std::string> const&				getCgiExtensions(void) const;
@@ -57,8 +58,8 @@ public:
 	void		addErrorPages(int errorCode, std::string const& errorPage);
 	void		parseAndAddErrorPages(std::vector<std::string> const& errorPages);
 
-	void		setRedirect(std::map<std::string, std::string> const& redirect);
-	void		addRedirect(std::string const& from, std::string const& to);
+	void		setRedirectStatusCode(int statusCode);
+	void		setRedirectUri(std::string const& redirectUri);
 
 	void		setAllowedMethods(std::vector<std::string> const& allowedMethods);
 	void		addAllowedMethods(std::string const& allowedMethods);
@@ -88,7 +89,8 @@ private:
  	std::vector<std::string>			index_;
  	std::map<int, std::string>			errorPages_;
 
-	std::map<std::string, std::string>	redirect_;
+	int									redirectStatusCode_;
+	std::string							redirectUri_;
 
 	std::vector<std::string>			allowedMethods_;
 
