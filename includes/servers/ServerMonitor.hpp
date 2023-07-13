@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 15:00:29 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/12 16:43:42 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/13 10:57:35 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,7 +49,7 @@ class ServerMonitor
 
 		void						parseConfigFile(std::string const& configFileName);
 
-		void						setServersStartListen(void) const;
+		void						setServersStartListen(void);
 
 		void						handleUserInput(void);
 		void						handleNewConnection(int fd);

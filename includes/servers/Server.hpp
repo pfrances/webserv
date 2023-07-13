@@ -33,13 +33,17 @@ class Server {
 		std::string const&		getHost(void) const;
 		short					getPort(void) const;
 		int						getSocketFd(void) const;
+		std::map<std::string,
+			Location*> const&	getLocationsMap(void) const;
 
-		void					startListen(void) const;
+		void					startListen(void);
 
 		int						acceptNewClient(void);
-		Response*				handleClientRequest(Request const& req) const;
+		Response*				handleClientRequest(Request const& req);
 
-		bool					isCgiRequest(Request const& req) const;
+		void					prepareSocket(void);
+		void					addSubServer(Server *subServ);
+
 
 	private:
 		Server(void);
@@ -47,7 +51,9 @@ class Server {
 		void					setPort(std::string const& portStr);
 		void					addLocation(Location* location);
 
-		Location*				getCorrespondingLocation(std::string const& uri) const;
+		Location*				findLocation(std::map<std::string, Location*> const& locMap,
+												std::string const& uri);
+		Location*				getCorrespondingLocation(Request const& req);
 
 		Response*				handleError(int statusCode, Location *location) const;
 		std::string				setFileListHtmlToReqBody(std::map<std::string, std::string> const& filesList,
@@ -69,6 +75,8 @@ class Server {
 
 		std::map<std::string,
 			Location*>			locationsMap_;
+		std::map<std::string,
+					Server*>	subServMap_;
 };
 
 int	stringIpToInt(std::string const& ip);

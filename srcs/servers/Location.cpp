@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:23:49 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/12 17:32:51 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/13 13:00:40 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,12 +20,12 @@
 Location::Location(void) :	path_("/"),
 							root_("./"),
 							uploadPath_("./"),
-							index_(std::vector<std::string>()),
-							errorPages_(std::map<int, std::string>()),
-							redirect_(std::map<std::string, std::string>()),
-							allowedMethods_(std::vector<std::string>()),
-							cgiExecutor_(std::vector<std::string>()),
-							cgiExtensions_(std::vector<std::string>()),
+							index_(),
+							errorPages_(),
+							redirect_(),
+							allowedMethods_(),
+							cgiExecutor_(),
+							cgiExtensions_(),
 							clientMaxBodySize_(1024),
 							autoIndex_(false) {
 	allowedMethods_.push_back("GET");
@@ -35,16 +35,18 @@ Location::Location(std::string const& locationConf,
 					std::string const& path) :	path_(path),
 												root_(""),
 												uploadPath_("./"),
-												index_(std::vector<std::string>()),
-												errorPages_(std::map<int, std::string>()),
-												redirect_(std::map<std::string, std::string>()),
-												allowedMethods_(std::vector<std::string>()),
-												cgiExecutor_(std::vector<std::string>()),
-												cgiExtensions_(std::vector<std::string>()),
+												index_(),
+												errorPages_(),
+												redirect_(),
+												allowedMethods_(),
+												cgiExecutor_(),
+												cgiExtensions_(),
 												clientMaxBodySize_(1024),
 												autoIndex_(false) {
-	allowedMethods_.push_back("GET");
 	this->parseLocationConf(locationConf);
+	if (this->allowedMethods_.empty()) {
+		this->allowedMethods_.push_back("GET");
+	}
 }
 
 Location::Location(Location const& other) :	path_(other.path_),

@@ -26,8 +26,48 @@ Server::Server(std::string const& serverConf) :	serverName_("default"),
 												port_(8080),
 												sockaddr_(),
 												socketFd_(-1),
-												locationsMap_() {
+												locationsMap_(),
+												subServMap_() {
 	this->parseServerConf(serverConf);
+}
+
+Server::~Server(void) {
+	std::map<std::string, Location*>::iterator itLoc = this->locationsMap_.begin();
+	std::map<std::string, Location*>::iterator iteLoc = this->locationsMap_.end();
+	for (; itLoc != iteLoc; itLoc++) {
+		delete itLoc->second;
+	}
+
+	std::map<std::string, Server*>::iterator itSubServ = this->subServMap_.begin();
+	std::map<std::string, Server*>::iterator iteSubServ = this->subServMap_.end();
+	for (; itSubServ != iteSubServ; itSubServ++) {
+		delete itSubServ->second;
+	}
+}
+
+Server::Server(Server const& other) :	serverName_(other.serverName_),
+										host_(other.host_),
+										port_(other.port_),
+										sockaddr_(other.sockaddr_),
+										socketFd_(other.socketFd_),
+										locationsMap_(other.locationsMap_),
+										subServMap_(other.subServMap_) {
+
+}
+
+Server &Server::operator=(Server const& other) {
+	if (this != &other) {
+		this->serverName_ = other.serverName_;
+		this->host_ = other.host_;
+		this->port_ = other.port_;
+		this->sockaddr_ = other.sockaddr_;
+		this->locationsMap_ = other.locationsMap_;
+		this->subServMap_ = other.subServMap_;
+	}
+	return (*this);
+}
+
+void	Server::prepareSocket(void) {
 	this->sockaddr_.sin_family = AF_INET;
 	this->sockaddr_.sin_port = htons(port_);
 	this->sockaddr_.sin_addr.s_addr = htonl(stringIpToInt(host_));
@@ -46,32 +86,18 @@ Server::Server(std::string const& serverConf) :	serverName_("default"),
 	}
 }
 
-Server::~Server(void) {
-	std::map<std::string, Location*>::iterator it = this->locationsMap_.begin();
-	std::map<std::string, Location*>::iterator ite = this->locationsMap_.end();
-	for (; it != ite; it++) {
-		delete it->second;
+void	Server::addSubServer(Server *subServ) {
+	std::string const& hostName = subServ->getServerName();
+
+	if (hostName == this->serverName_ || this->subServMap_.find(hostName) != this->subServMap_.end()) {
+		throw ConfigurationException("The Hostname '" + hostName + "' has been used twice for the same host:port.");
 	}
+
+	this->subServMap_[hostName] = subServ;
 }
 
-Server::Server(Server const& other) :	serverName_(other.serverName_),
-										host_(other.host_),
-										port_(other.port_),
-										sockaddr_(other.sockaddr_),
-										socketFd_(other.socketFd_),
-										locationsMap_(other.locationsMap_) {
-
-}
-
-Server &Server::operator=(Server const& other) {
-	if (this != &other) {
-		this->serverName_ = other.serverName_;
-		this->host_ = other.host_;
-		this->port_ = other.port_;
-		this->sockaddr_ = other.sockaddr_;
-		this->locationsMap_ = other.locationsMap_;
-	}
-	return (*this);
+std::map<std::string, Location*> const&	Server::getLocationsMap(void) const {
+	return (this->locationsMap_);
 }
 
 std::string const& Server::getServerName(void) const {
@@ -109,7 +135,7 @@ int	Server::acceptNewClient(void) {
 	return accept(this->socketFd_, (struct sockaddr *)&clientAddr, &clientAddrLen);
 }
 
-void	Server::startListen(void) const {
+void	Server::startListen(void) {
 	if (listen(this->socketFd_, 10) < 0) {
 		throw std::runtime_error(this->getHost() + ":" + ParseTools::intToString(this->getPort()) + " listen error");
 	}
@@ -176,13 +202,12 @@ void	Server::parseServerConf(std::string const& serverConf) {
 
 	std::map<std::string, Location*>::iterator itLoc = this->locationsMap_.begin();
 	std::map<std::string, Location*>::iterator iteLoc = this->locationsMap_.end();
-	if (itLoc == iteLoc) {
+	for (; itLoc != iteLoc; itLoc++) {
+		Location* location = itLoc->second;
+		location->applyDefaultValues(defaultLocation);
+	}
+	if (this->locationsMap_.find("/") == iteLoc) {
 		this->addLocation(new Location(defaultLocation));
-	} else {
-		for (; itLoc != iteLoc; itLoc++) {
-			Location* location = itLoc->second;
-			location->applyDefaultValues(defaultLocation);
-		}
 	}
 }
 
@@ -399,15 +424,15 @@ Response*	Server::handleCgiRequest(Request const& req, Location *location) const
 	return handleError(501, location);
 }
 
-Response*	Server::handleClientRequest(Request const& req) const {
+Response*	Server::handleClientRequest(Request const& req) {
 
 	std::cout << req.getStartLine() << std::endl;
 	if (req.isRequestValid() == false) {
 		return this->handleError(400, this->locationsMap_.find("/")->second);
 	}
 
+	Location *location = getCorrespondingLocation(req);
 	std::string const& method = req.getMethod();
-	Location *location = getCorrespondingLocation(req.getUri());
 
 	if (method == "GET") {
 		return this->handleGetRequest(req, location);
@@ -419,14 +444,12 @@ Response*	Server::handleClientRequest(Request const& req) const {
 	return this->handleError(501, this->locationsMap_.find("/")->second);
 }
 
-Location*	Server::getCorrespondingLocation(std::string const& uri) const {
-
+Location*	Server::findLocation(std::map<std::string, Location*> const& locMap, std::string const& uri) {
 	std::string tmp = uri;
-
 	while (tmp.size() > 0)
 	{
-		std::map<std::string, Location*>::const_iterator it = this->locationsMap_.find(tmp);
-		if (it != this->locationsMap_.end()) {
+		std::map<std::string, Location*>::const_iterator it = locMap.find(tmp);
+		if (it != locMap.end()) {
 			return it->second;
 		}
 		size_t pos = tmp.find_last_of('/');
@@ -435,10 +458,20 @@ Location*	Server::getCorrespondingLocation(std::string const& uri) const {
 		}
 		tmp = tmp.substr(0, pos);
 	}
-	if (this->locationsMap_.find("/") != this->locationsMap_.end()) {
-		return this->locationsMap_.find("/")->second;
+	if (locMap.find("/") != locMap.end()) {
+		return locMap.find("/")->second;
 	}
 	return NULL;
+}
+
+Location*	Server::getCorrespondingLocation(Request const& req) {
+
+	std::string const& hostName = req.getHostName();
+	if (this->subServMap_.find(hostName) != this->subServMap_.end()) {
+		return findLocation(this->subServMap_[hostName]->getLocationsMap(), req.getUri());
+	} else {
+		return findLocation(this->getLocationsMap(), req.getUri());
+	}
 }
 
 int	stringIpToInt(std::string const& ip) {

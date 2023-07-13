@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 14:42:05 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/12 12:11:57 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/13 13:13:45 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@
 
 void signalHandler(int signal) {
 	if (signal == SIGINT) {
-		throw std::runtime_error("\nTerminated by SIGINT");
+		throw ShutdownException("\nTerminated by SIGINT");
 	}
 }
 
@@ -33,6 +33,9 @@ int	main(int argc, char **argv)
 	try {
 		ServerMonitor webserv(argv[1]);
 		webserv.run();
+	} catch (ShutdownException& e) {
+		std::cerr << e.what() << std::endl;
+		return 0;
 	} catch(std::exception& e) {
 		std::cerr << e.what() << std::endl;
 		return 1;

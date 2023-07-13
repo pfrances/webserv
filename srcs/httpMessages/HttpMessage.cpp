@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 12:27:17 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/10 11:33:42 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/13 12:44:54 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,8 @@ HttpMessage::HttpMessage(void) :	rawMessage_(""),
 									body_(""),
 									chunksFetched_(true),
 									totalSize_(0),
-									boundary_("") {
+									boundary_(""),
+									hostName_("") {
 
 }
 
@@ -32,7 +33,8 @@ HttpMessage::HttpMessage(std::string const& rawMessage) :	rawMessage_(rawMessage
 															body_(""),
 															chunksFetched_(true),
 															totalSize_(0),
-															boundary_("") {
+															boundary_(""),
+															hostName_("") {
 	parseRawMessage();
 }
 
@@ -41,8 +43,9 @@ HttpMessage::HttpMessage(HttpMessage const& other) :	rawMessage_(other.rawMessag
 														headersMap_(other.headersMap_),
 														body_(other.body_),
 														chunksFetched_(other.chunksFetched_),
-														totalSize_(other.totalSize_), 
-														boundary_(other.boundary_) {
+														totalSize_(other.totalSize_),
+														boundary_(other.boundary_),
+														hostName_(other.hostName_) {
 	if (this != &other) {
 		*this = other;
 	}
@@ -57,6 +60,7 @@ HttpMessage&	HttpMessage::operator=(HttpMessage const& other) {
 		this->chunksFetched_ = other.chunksFetched_;
 		this->totalSize_ = other.totalSize_;
 		this->boundary_ = other.boundary_;
+		this->hostName_ = other.hostName_;
 	}
 	return (*this);
 }
@@ -90,6 +94,10 @@ std::string const&	HttpMessage::getRawMessage(void) const {
 	return (this->rawMessage_);
 }
 
+std::string const&		HttpMessage::getHostName(void) const{
+	return this->hostName_;
+}
+
 bool	HttpMessage::isFetched(void) const {
 	return this->chunksFetched_;
 }
@@ -110,12 +118,19 @@ void	HttpMessage::setSingleHeader(std::string const& key, std::string const& val
 	this->headersMap_[key] = value;
 	this->updateHeadersStr();
 	this->updateRawMessage();
+	if (key == "Host") {
+		this->hostName_ = value;
+		this->hostName_ = value.substr(0, value.find(":"));
+	}
 }
 
 void	HttpMessage::setHeadersMap(std::map<std::string, std::string> const& headers) {
 	this->headersMap_ = headers;
 	this->updateHeadersStr();
 	this->updateRawMessage();
+
+	std::string const& host = this->getSingleHeader("Host");
+	this->hostName_ = host.substr(0, host.find(":"));
 }
 
 void	HttpMessage::setBody(std::string const& body) {
@@ -181,7 +196,7 @@ void	HttpMessage::parseHeadersMap(void) {
 	std::string header;
 	while (std::getline(iss, header)) {
 		std::pair<std::string, std::string> headerPair = parseSingleHeader(header);
-		this->headersMap_.insert(headerPair);
+		this->setSingleHeader(headerPair.first, headerPair.second);
 	}
 }
 

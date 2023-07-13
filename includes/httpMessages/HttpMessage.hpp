@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 12:09:28 by pfrances          #+#    #+#             */
-/*   Updated: 2023/06/29 12:44:43 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/13 12:36:44 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,6 +43,7 @@ class HttpMessage
 		std::string const&				getHeadersStr(void) const;
 		std::string const&				getBody(void) const;
 		std::string const&				getRawMessage(void) const;
+		std::string const&				getHostName(void) const;
 
 		bool							isFetched(void) const;
 
@@ -65,6 +66,7 @@ class HttpMessage
 		bool							chunksFetched_;
 		size_t							totalSize_;
 		std::string						boundary_;
+		std::string						hostName_;
 
 
 

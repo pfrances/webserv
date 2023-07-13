@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/13 09:48:34 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/13 12:51:14 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,10 +83,18 @@ void	ServerMonitor::parseConfigFile(std::string const& configFileName){
 		if (token == "server") {
 			std::string serverBlock = ParseTools::extractBlock(conf, it);
 			Server *server = new Server(serverBlock);
-			int fd = server->getSocketFd();
-
-			this->addNewPollfd(fd, POLLIN);
-			this->serversMap_.insert(std::pair<int, Server*>(fd, server));
+			std::map<int, Server*>::iterator it = this->serversMap_.begin();
+			std::map<int, Server*>::iterator ite = this->serversMap_.end();
+			for (; it != ite; it++) {
+				if (it->second->getPort() == server->getPort()) {
+					it->second->addSubServer(server);
+					break;
+				}
+			}
+			if (it == ite) {
+				server->prepareSocket();
+				this->serversMap_[server->getSocketFd()] = server;
+			}
 		}
 		else {
 			throw ConfigurationException("[Configuration file] Unexpected token: " + token);
@@ -97,11 +105,14 @@ void	ServerMonitor::parseConfigFile(std::string const& configFileName){
 		throw ConfigurationException("[Configuration file] No server to configurate");
 }
 
-void	ServerMonitor::setServersStartListen(void) const {
+void	ServerMonitor::setServersStartListen(void) {
 	std::map<int, Server*>::const_iterator it = serversMap_.begin();
 	std::map<int, Server*>::const_iterator ite = serversMap_.end();
 	for (; it != ite; it++) {
 		Server *server = it->second;
+		int fd = server->getSocketFd();
+
+		this->addNewPollfd(fd, POLLIN);
 		server->startListen();
 	}
 }
