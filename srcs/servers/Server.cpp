@@ -12,6 +12,7 @@
 
 #include "Server.hpp"
 #include "ParseTools.hpp"
+#include "Location.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
 #include "File.hpp"
@@ -27,8 +28,33 @@ Server::Server(std::string const& serverConf) :	serverName_("default"),
 												sockaddr_(),
 												socketFd_(-1),
 												locationsMap_(),
-												subServMap_() {
+												subServMap_(),
+												clientLastRequestTimeMap_() {
 	this->parseServerConf(serverConf);
+}
+
+Server::Server(Server const& other) :	serverName_(other.serverName_),
+										host_(other.host_),
+										port_(other.port_),
+										sockaddr_(other.sockaddr_),
+										socketFd_(other.socketFd_),
+										locationsMap_(other.locationsMap_),
+										subServMap_(other.subServMap_),
+										clientLastRequestTimeMap_(other.clientLastRequestTimeMap_) {
+
+}
+
+Server &Server::operator=(Server const& other) {
+	if (this != &other) {
+		this->serverName_ = other.serverName_;
+		this->host_ = other.host_;
+		this->port_ = other.port_;
+		this->sockaddr_ = other.sockaddr_;
+		this->locationsMap_ = other.locationsMap_;
+		this->subServMap_ = other.subServMap_;
+		this->clientLastRequestTimeMap_ = other.clientLastRequestTimeMap_;
+	}
+	return (*this);
 }
 
 Server::~Server(void) {
@@ -43,28 +69,6 @@ Server::~Server(void) {
 	for (; itSubServ != iteSubServ; itSubServ++) {
 		delete itSubServ->second;
 	}
-}
-
-Server::Server(Server const& other) :	serverName_(other.serverName_),
-										host_(other.host_),
-										port_(other.port_),
-										sockaddr_(other.sockaddr_),
-										socketFd_(other.socketFd_),
-										locationsMap_(other.locationsMap_),
-										subServMap_(other.subServMap_) {
-
-}
-
-Server &Server::operator=(Server const& other) {
-	if (this != &other) {
-		this->serverName_ = other.serverName_;
-		this->host_ = other.host_;
-		this->port_ = other.port_;
-		this->sockaddr_ = other.sockaddr_;
-		this->locationsMap_ = other.locationsMap_;
-		this->subServMap_ = other.subServMap_;
-	}
-	return (*this);
 }
 
 void	Server::prepareSocket(void) {
@@ -112,6 +116,17 @@ short Server::getPort(void) const {
 	return (this->port_);
 }
 
+size_t Server::getClientLastRequestTime(int clientFd) const {
+	if (this->clientLastRequestTimeMap_.find(clientFd) != this->clientLastRequestTimeMap_.end()) {
+		return (this->clientLastRequestTimeMap_.at(clientFd));
+	}
+	return (0);
+}
+
+int	Server::getSocketFd(void) const {
+	return (this->socketFd_);
+}
+
 void Server::setPort(std::string const& portStr) {
 	int port = ParseTools::stringToInt(portStr);
 	if (port < 0 || port > std::numeric_limits<unsigned short>::max()) {
@@ -120,8 +135,12 @@ void Server::setPort(std::string const& portStr) {
 	this->port_ = static_cast<short>(port);
 }
 
-int	Server::getSocketFd(void) const {
-	return (this->socketFd_);
+void	Server::setClientLastRequestTime(int clientFd, size_t time) {
+	this->clientLastRequestTimeMap_[clientFd] = time;
+}
+
+void	Server::removeClient(int clientFd) {
+	this->clientLastRequestTimeMap_.erase(clientFd);
 }
 
 void	Server::addLocation(Location* location) {
@@ -231,11 +250,14 @@ Response*	Server::handleError(int statusCode, Location *location) const {
 		res->setBody(file.getFileContent());
 	} else {
 		res->setStatusCode(statusCode);
-		res->setSingleHeader("Content-Type", "text/plain");
 		res->setBody("[Error " + res->getStatusCode() + "] " + res->getStatusMessage());
 	}
 
 	return res;
+}
+
+Response*	Server::handleError(int statusCode) const {
+	return this->handleError(statusCode, this->locationsMap_.at("/"));
 }
 
 std::string	Server::setFileListHtmlToReqBody(std::map<std::string, std::string> const& filesList,
@@ -282,6 +304,7 @@ Response*	Server::handleIndexing(File const& file, Request const& req, Location 
 	if (location->getAutoIndex()) {
 		Response *res = new Response();
 		res->setStatusCode(200);
+		res->setMimeByExtension("html");
 		res->setBody(setFileListHtmlToReqBody(file.getFilesListing(), req));
 		return res;
 	}

@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:21 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/13 15:41:01 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/14 10:29:25 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@ Response::Response(void) :	HttpMessage(),
 							statusMessage_(""),
 							httpVersion_("HTTP/1.1"),
 							cgiHandler_(NULL) {
-
+	this->setSingleHeader("Content-Type", "text/plain");
 }
 
 Response::Response(std::string const& rawResponse) :	HttpMessage(rawResponse),
@@ -132,6 +132,8 @@ void	Response::setStatusMessageFromCode(int statusCode) {
 		this->statusMessage_ = "Not Found";
 	} else if (statusCode == 405) {
 		this->statusMessage_ = "Method Not Allowed";
+	} else if (statusCode == 408) {
+		this->statusMessage_ = "Request Timeout";
 	} else if (statusCode == 409) {
 		this->statusMessage_ = "Conflict";
 	} else if (statusCode == 410) {
@@ -155,7 +157,7 @@ void	Response::setStatusMessageFromCode(int statusCode) {
 	} else if (statusCode == 505) {
 		this->statusMessage_ = "HTTP Version Not Supported";
 	} else {
-		this->statusMessage_ = "Unknow error";
+		this->statusMessage_ = "error_" + ParseTools::intToString(statusCode);
 	}
 }
 

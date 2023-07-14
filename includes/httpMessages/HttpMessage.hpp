@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 12:09:28 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/13 12:36:44 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/13 19:38:49 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,8 +67,6 @@ class HttpMessage
 		size_t							totalSize_;
 		std::string						boundary_;
 		std::string						hostName_;
-
-
 
 		virtual void					parseStartLine(void) = 0;
 		virtual void					updateStartLine(void) = 0;

@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:45:00 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/12 16:30:41 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/13 19:36:31 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,9 +34,11 @@ class CgiHandler {
 		std::vector<std::string> const&	getEnv(void) const;
 		std::string	const&				getCgiPath(void) const;
 		int								getClientFd(void) const;
+		size_t							getStartTime(void) const;
 
 		void							setCgiPath(std::string const& path);
 		void							setClientFd(int fd);
+		void							setStartTime(size_t time);
 
 	private:
 		CgiHandler(void);
@@ -47,6 +49,7 @@ class CgiHandler {
 		std::vector<std::string>	envVec_;
 		std::vector<std::string>	argsVec_;
 		int							clientFd_;
+		size_t						startTime_;
 
 		char *const*				StringVecToCharPtrArray(std::vector<std::string> const& vec) const;
 };

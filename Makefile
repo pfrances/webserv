@@ -6,7 +6,7 @@
 #    By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/02/26 11:07:21 by pfrances          #+#    #+#              #
-#    Updated: 2023/07/11 23:28:23 by pfrances         ###   ########.fr        #
+#    Updated: 2023/07/13 19:35:01 by pfrances         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -39,8 +39,9 @@ SRCS =	$(SRCS_DIR)/main.cpp				\
 		$(HTTP_DIR)/Request.cpp				\
 		$(HTTP_DIR)/Response.cpp			\
 		$(UTILS_DIR)/ParseTools.cpp			\
+		$(UTILS_DIR)/File.cpp				\
 		$(UTILS_DIR)/Path.cpp				\
-		$(UTILS_DIR)/File.cpp
+		$(UTILS_DIR)/Timer.cpp
 
 OBJS = $(subst $(SRCS_DIR), $(OBJS_DIR), $(SRCS:.cpp=.o))
 

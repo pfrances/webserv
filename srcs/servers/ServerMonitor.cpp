@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/13 18:19:02 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/14 10:27:17 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,10 +21,33 @@
 
 ServerMonitor::ServerMonitor(std::string const& confFileName) :	serversMap_(),
 																clientsMap_(),
+																cgiHandlersMap_(),
 																responsesMap_(),
-																pollfdsVec_() {
+																pollfdsVec_(),
+																timer_() {
 	this->addNewPollfd(STDIN_FILENO, POLLIN);
 	this->parseConfigFile(confFileName);
+}
+
+ServerMonitor::ServerMonitor(ServerMonitor const& other) :	serversMap_(other.serversMap_),
+															clientsMap_(other.clientsMap_),
+															cgiHandlersMap_(other.cgiHandlersMap_),
+															responsesMap_(other.responsesMap_),
+															pollfdsVec_(other.pollfdsVec_),
+															timer_(other.timer_) {
+
+}
+
+ServerMonitor &ServerMonitor::operator=(ServerMonitor const& other) {
+	if (this != &other) {
+		this->serversMap_ = other.serversMap_;
+		this->clientsMap_ = other.clientsMap_;
+		this->responsesMap_ = other.responsesMap_;
+		this->cgiHandlersMap_ = other.cgiHandlersMap_;
+		this->pollfdsVec_ = other.pollfdsVec_;
+		this->timer_ = other.timer_;
+	}
+	return (*this);
 }
 
 ServerMonitor::~ServerMonitor(void) {
@@ -53,23 +76,6 @@ ServerMonitor::~ServerMonitor(void) {
 	for(; itCgi != iteCgi; itCgi++) {
 		delete itCgi->second;
 	}
-}
-
-ServerMonitor::ServerMonitor(ServerMonitor const& other) :	serversMap_(other.serversMap_),
-															clientsMap_(other.clientsMap_),
-															responsesMap_(other.responsesMap_),
-															pollfdsVec_(other.pollfdsVec_) {
-
-}
-
-ServerMonitor &ServerMonitor::operator=(ServerMonitor const& other) {
-	if (this != &other) {
-		this->serversMap_ = other.serversMap_;
-		this->clientsMap_ = other.clientsMap_;
-		this->responsesMap_ = other.responsesMap_;
-		this->pollfdsVec_ = other.pollfdsVec_;
-	}
-	return (*this);
 }
 
 void	ServerMonitor::parseConfigFile(std::string const& configFileName){
@@ -129,7 +135,9 @@ void	ServerMonitor::handleNewConnection(int fd) {
 	}
 
 	this->addNewPollfd(clientfd, POLLIN);
-	this->clientsMap_.insert(std::pair<int, Server*>(clientfd, this->serversMap_[fd]));
+	Server *server = this->serversMap_[fd];
+	this->clientsMap_.insert(std::pair<int, Server*>(clientfd, server));
+	server->setClientLastRequestTime(clientfd, this->timer_.getCurrentTime());
 }
 
 int	ServerMonitor::getPollfdsVecIndxFromFd(int fd) const {
@@ -160,9 +168,9 @@ void	ServerMonitor::handleClientRequest(int fd) {
 	std::vector<Request*> resVec = parseMultipleRequest(msg);
 	std::vector<Request*>::iterator it = resVec.begin();
 	std::vector<Request*>::iterator ite = resVec.end();
+	Server *server = this->clientsMap_[fd];
 	for (; it != ite; it++) {
 		Request *req = *it;
-		Server *server = this->clientsMap_[fd];
 		while (req->isFetched() == false) {
 			std::string msg = this->recvMsg(fd);
 			req->appendToBody(msg);
@@ -172,6 +180,7 @@ void	ServerMonitor::handleClientRequest(int fd) {
 		if (res) {
 			if (res->hasCgiHandler()) {
 				CgiHandler *cgi = res->getCgiHandler();
+				cgi->setStartTime(this->timer_.getCurrentTime());
 				int cgiFd = cgi->getPipeReadFd();
 				this->addNewPollfd(cgiFd, POLLIN);
 				this->cgiHandlersMap_[cgiFd] = cgi;
@@ -181,9 +190,11 @@ void	ServerMonitor::handleClientRequest(int fd) {
 				this->responsesMap_[fd] = res;
 				this->addEventToPolfd(fd, POLLOUT);
 			}
+
 		}
 		delete req;
 	}
+	server->setClientLastRequestTime(fd, this->timer_.getCurrentTime());
 }
 
 void	ServerMonitor::handleCgiResponse(int fd) {
@@ -216,38 +227,46 @@ void	ServerMonitor::handleResponseToSend(int fd) {
 	this->responsesMap_.erase(fd);
 }
 
-void ServerMonitor::run() {
-	this->setServersStartListen();
-	while (1) {
-		if (poll(pollfdsVec_.data(), pollfdsVec_.size(), -1) < 0) {
-			throw std::runtime_error("poll error");
-		}
-
-		for (size_t i = 0; i < pollfdsVec_.size(); i++) {
-			try {
-				if (pollfdsVec_[i].revents & (POLLHUP | POLLERR | POLLNVAL)) {
-					this->closeConnection(pollfdsVec_[i].fd);
-				}
-				if (pollfdsVec_[i].revents & POLLIN) {
-					if (pollfdsVec_[i].fd == STDIN_FILENO) {
-						this->handleUserInput();
-					} else if (this->serversMap_.find(pollfdsVec_[i].fd) != this->serversMap_.end()) {
-						this->handleNewConnection(pollfdsVec_[i].fd);
-					} else if (this->clientsMap_.find(pollfdsVec_[i].fd) != this->clientsMap_.end()) {
-						this->handleClientRequest(pollfdsVec_[i].fd);
-					} else if (this->cgiHandlersMap_.find(pollfdsVec_[i].fd) != this->cgiHandlersMap_.end()) {
-						this->handleCgiResponse(pollfdsVec_[i].fd);
-					}
-				}
-				if (pollfdsVec_[i].revents & POLLOUT) {
-					if (this->clientsMap_.find(pollfdsVec_[i].fd) != this->clientsMap_.end()) {
-						this->handleResponseToSend(pollfdsVec_[i].fd);
-					}
-				}
-			} catch (IoTroubleException &e) {
+void	ServerMonitor::handleEvents(void) {
+	for (size_t i = 0; i < pollfdsVec_.size(); i++) {
+		try {
+			if (pollfdsVec_[i].revents & (POLLHUP | POLLERR | POLLNVAL)) {
 				this->closeConnection(pollfdsVec_[i].fd);
 			}
+			if (pollfdsVec_[i].revents & POLLIN) {
+				if (pollfdsVec_[i].fd == STDIN_FILENO) {
+					this->handleUserInput();
+				} else if (this->serversMap_.find(pollfdsVec_[i].fd) != this->serversMap_.end()) {
+					this->handleNewConnection(pollfdsVec_[i].fd);
+				} else if (this->clientsMap_.find(pollfdsVec_[i].fd) != this->clientsMap_.end()) {
+					this->handleClientRequest(pollfdsVec_[i].fd);
+				} else if (this->cgiHandlersMap_.find(pollfdsVec_[i].fd) != this->cgiHandlersMap_.end()) {
+					this->handleCgiResponse(pollfdsVec_[i].fd);
+				}
+			}
+			if (pollfdsVec_[i].revents & POLLOUT) {
+				if (this->clientsMap_.find(pollfdsVec_[i].fd) != this->clientsMap_.end()) {
+					this->handleResponseToSend(pollfdsVec_[i].fd);
+				}
+			}
+		} catch (IoTroubleException &e) {
+			this->closeConnection(pollfdsVec_[i].fd);
 		}
+	}
+}
+
+void ServerMonitor::run() {
+	this->setServersStartListen();
+
+	while (1) {
+		int ret = poll(pollfdsVec_.data(), pollfdsVec_.size(), POLL_TIMEOUT);
+		if (ret < 0) {
+			throw std::runtime_error("poll error");
+		}
+		if (ret > 0) {
+			this->handleEvents();
+		}
+		this->checkTimeOut();
 	}
 }
 
@@ -336,6 +355,8 @@ void	ServerMonitor::removePollfd(int fd) {
 		if (it->fd == fd) {
 			close(fd);
 			it->fd = -1;
+			it->events = 0;
+			it->revents = 0;
 		}
 	}
 }
@@ -360,5 +381,38 @@ void	ServerMonitor::RemoveEventToPolfd(int fd, short event) {
 			it->events &= ~event;
 			break;
 		}
+	}
+}
+
+void	ServerMonitor::checkTimeOut(void) {
+	std::vector<int> fdsToClose;
+	std::map<int, CgiHandler*>::iterator itCgi = this->cgiHandlersMap_.begin();
+	std::map<int, CgiHandler*>::iterator iteCgi = this->cgiHandlersMap_.end();
+	for (; itCgi != iteCgi; itCgi++) {
+		int	cgiFd = itCgi->first;
+		CgiHandler* cgiHandler = itCgi->second;
+		if (this->timer_.getElapsedTimeSince(cgiHandler->getStartTime()) > CGI_TIMEOUT) {
+			int clientFd = cgiHandler->getClientFd();
+			Server *server = this->clientsMap_[clientFd];
+			Response *res = server->handleError(504);
+			this->responsesMap_[clientFd] = res;
+			this->addEventToPolfd(clientFd, POLLOUT);
+			fdsToClose.push_back(cgiFd);
+		}
+	}
+
+	std::map<int, Server*>::iterator itClient = this->clientsMap_.begin();
+	std::map<int, Server*>::iterator iteClient = this->clientsMap_.end();
+	for (; itClient != iteClient; itClient++) {
+		Server *server = itClient->second;
+		int clientFd = itClient->first;
+		if (this->timer_.getElapsedTimeSince(server->getClientLastRequestTime(clientFd)) > CLIENT_TIMEOUT) {
+			server->removeClient(clientFd);
+			fdsToClose.push_back(clientFd);
+		}
+	}
+
+	for (size_t i = 0; i < fdsToClose.size(); i++) {
+		this->closeConnection(fdsToClose[i]);
 	}
 }

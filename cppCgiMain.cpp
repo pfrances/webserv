@@ -1,6 +1,8 @@
 #include <iostream>
+#include <unistd.h>
 
 int main(void) {
+	sleep(10);
 	std::cout << "HTTP/1.1 200 OK\r" << std::endl;
 	std::cout << "Content-Type: text/html\r" << std::endl;
 	std::cout << "\r" << std::endl;

@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 15:00:29 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/13 10:57:35 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/14 10:14:36 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,11 +17,24 @@
 # define BUFFER_SIZE 1024
 #endif
 
+#ifndef CLIENT_TIMEOUT
+# define CLIENT_TIMEOUT 30000
+#endif
+
+#ifndef CGI_TIMEOUT
+# define CGI_TIMEOUT 1000
+#endif
+
+#ifndef POLL_TIMEOUT
+# define POLL_TIMEOUT 100
+#endif
+
 # include <string>
 # include <vector>
 # include <map>
 # include <poll.h>
 # include <stdexcept>
+# include "Timer.hpp"
 
 class CgiHandler;
 class Response;
@@ -46,6 +59,7 @@ class ServerMonitor
 		std::map<int, CgiHandler*>	cgiHandlersMap_;
 		std::map<int, Response*>	responsesMap_;
 		std::vector<pollfd>			pollfdsVec_;
+		Timer						timer_;
 
 		void						parseConfigFile(std::string const& configFileName);
 
@@ -56,6 +70,7 @@ class ServerMonitor
 		void						handleClientRequest(int fd);
 		void						handleResponseToSend(int fd);
 		void						handleCgiResponse(int fd);
+		void						handleEvents(void);
 
 		std::string					recvMsg(int fd) const;
 		std::string					readPipe(int fd) const;
@@ -68,6 +83,7 @@ class ServerMonitor
 		void						removePollfd(int fd);
 
 		void						updatePollfdVec(void);
+		void						checkTimeOut(void);
 };
 
 class IoTroubleException : public std::runtime_error {

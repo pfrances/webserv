@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:44:51 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/12 19:13:27 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/13 19:37:56 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -87,12 +87,20 @@ int CgiHandler::getClientFd(void) const {
 	return clientFd_;
 }
 
+size_t CgiHandler::getStartTime(void) const {
+	return startTime_;
+}
+
 void CgiHandler::setCgiPath(std::string const& path) {
 	cgiPath_ = path;
 }
 
 void	CgiHandler::setClientFd(int fd) {
 	this->clientFd_ = fd;
+}
+
+void	CgiHandler::setStartTime(size_t time) {
+	this->startTime_ = time;
 }
 
 void CgiHandler::executeCgi(void) {

@@ -2,7 +2,6 @@
 
 echo -e "HTTP/1.1 200 OK\r
 Content-Type: text/html\r
-Content-Length: 127\r
 \r
 <!DOCTYPE html>
 <html>

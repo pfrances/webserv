@@ -16,8 +16,8 @@
 # include <string>
 # include <map>
 # include <netinet/in.h>
-# include "Location.hpp"
 
+class Location;
 class Request;
 class Response;
 class File;
@@ -35,6 +35,7 @@ class Server {
 		int						getSocketFd(void) const;
 		std::map<std::string,
 			Location*> const&	getLocationsMap(void) const;
+		size_t					getClientLastRequestTime(int clientFd) const;
 
 		void					startListen(void);
 
@@ -43,6 +44,9 @@ class Server {
 
 		void					prepareSocket(void);
 		void					addSubServer(Server *subServ);
+		Response*				handleError(int statusCode) const;
+		void					setClientLastRequestTime(int clientFd, size_t time);
+		void					removeClient(int clientFd);
 
 
 	private:
@@ -55,7 +59,6 @@ class Server {
 												std::string const& uri);
 		Location*				getCorrespondingLocation(Request const& req);
 
-		Response*				handleError(int statusCode, Location *location) const;
 		std::string				setFileListHtmlToReqBody(std::map<std::string, std::string> const& filesList,
 														Request const& req) const;
 		Response*				handleIndexing(File const& file, Request const& req, Location *location) const;
@@ -67,6 +70,7 @@ class Server {
 		Response*				handleCgiRequest(Request const& req, Location *location) const;
 
 		Response*				handleRedirection(Request const& req, Location *location) const;
+		Response*				handleError(int statusCode, Location *location) const;
 
 		std::string				serverName_;
 		std::string				host_;
@@ -79,6 +83,7 @@ class Server {
 			Location*>			locationsMap_;
 		std::map<std::string,
 					Server*>	subServMap_;
+		std::map<int, size_t>	clientLastRequestTimeMap_;
 };
 
 int	stringIpToInt(std::string const& ip);
