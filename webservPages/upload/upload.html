@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 	<title>UPLOAD</title>
 	<script>
@@ -12,7 +11,7 @@
 			})
 				.then(response => {
 					if (response.ok || response.redirected) {
-						console.log('Ressource deleted!');
+						console.log('Resource deleted!');
 						window.location.href = response.url;
 					} else {
 						console.log('Something went wrong!');
@@ -46,41 +45,39 @@
 	</form>
 
 	<h2>Upload file</h2>
-	<form id="upload-form" enctype="multipart/form-data">
-		<input type="file" id="file-input" name="file">
-		<button type="submit">Upload</button>
-	  </form>
+	<form id="uploadForm" enctype="multipart/form-data">
+		<input type="file" name="fileToUpload" id="fileToUpload">
+		<button type="submit" id="uploadButton">Upload</button>
+	</form>
 
-	  <script>
-		document.getElementById('upload-form').addEventListener('submit', function(event) {
-		  event.preventDefault();
+	<script>
+		document.getElementById('uploadForm').addEventListener('submit', function (event) {
+			event.preventDefault();
 
-		  const formData = new FormData();
-		  const fileInput = document.getElementById('file-input');
-		  const file = fileInput.files[0];
+			var fileInput = document.getElementById('fileToUpload');
+			var file = fileInput.files[0];
 
-		  if (file) {
-			formData.append('file', file);
+			var filename = file.name;
 
-			fetch('/post', {
-			  method: 'POST',
-			  body: formData
-			})
-			  .then(response => {
-				if (response.ok) {
-				  console.log('File uploaded successfully!');
+			var endpoint = "/post/" + filename;
+
+			var formData = new FormData();
+			formData.append('fileToUpload', file);
+
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', endpoint, true);
+			xhr.onload = function () {
+				if (xhr.status >= 200 && xhr.status < 400) {
+					console.log('Upload Success');
+					window.location.href = xhr.responseURL;
 				} else {
-				  console.error('Error uploading file:', response.status);
+					console.log('Request Failed');
+					window.history.pushState({}, '', endpoint);
+					document.documentElement.innerHTML = xhr.responseText;
 				}
-			  })
-			  .catch(error => {
-				console.error('Error uploading file:', error);
-			  });
-		  } else {
-			console.log('Please select a file.');
-		  }
+			};
+			xhr.send(formData);
 		});
-	  </script>
+	</script>
 </body>
-
 </html>

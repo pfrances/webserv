@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:21 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/14 10:29:25 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/15 11:45:04 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -140,6 +140,8 @@ void	Response::setStatusMessageFromCode(int statusCode) {
 		this->statusMessage_ = "Gone";
 	} else if (statusCode == 413) {
 		this->statusMessage_ = "Payload Too Large";
+	} else if (statusCode == 415) {
+		this->statusMessage_ = "Unsupported Media Type";
 	} else if (statusCode == 422) {
 		this->statusMessage_ = "Unprocessable Entity";
 	} else if (statusCode == 429) {

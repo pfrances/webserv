@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 17:53:49 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/10 16:07:27 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/15 15:08:19 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,8 @@ class ParseTools {
 											std::string const& forbiddenCharset);
 		static void						decodeUrlEncodedStr(std::string& str);
 		static int						hexaStrToInt(std::string const& hexa);
+		static std::string				parseBoundaryBody(std::string const& body,
+											std::string const& boundary);
 };
 
 class ConfigurationException : public std::runtime_error {

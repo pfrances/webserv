@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:23:49 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/13 18:29:40 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/15 19:03:52 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@ Location::Location(void) :	path_("/"),
 							allowedMethods_(),
 							cgiExecutor_(),
 							cgiExtensions_(),
-							clientMaxBodySize_(1024),
+							clientMaxBodySize_(8192),
 							autoIndex_(false) {
 	allowedMethods_.push_back("GET");
 }
@@ -43,7 +43,7 @@ Location::Location(std::string const& locationConf,
 												allowedMethods_(),
 												cgiExecutor_(),
 												cgiExtensions_(),
-												clientMaxBodySize_(1024),
+												clientMaxBodySize_(8192),
 												autoIndex_(false) {
 	this->parseLocationConf(locationConf);
 	if (this->allowedMethods_.empty()) {
@@ -432,7 +432,7 @@ void	Location::applyDefaultValues(Location const& defaultLocation) {
 	if (this->cgiExtensions_.empty()) {
 		this->cgiExtensions_ = defaultLocation.cgiExtensions_;
 	}
-	if (this->clientMaxBodySize_ == 0) {
+	if (this->clientMaxBodySize_ == 8192) {
 		this->clientMaxBodySize_ = defaultLocation.clientMaxBodySize_;
 	}
 	if (this->uploadPath_.empty()) {

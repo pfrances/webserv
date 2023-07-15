@@ -154,8 +154,8 @@ int	Server::acceptNewClient(void) {
 	return accept(this->socketFd_, (struct sockaddr *)&clientAddr, &clientAddrLen);
 }
 
-void	Server::startListen(void) {
-	if (listen(this->socketFd_, 10) < 0) {
+void	Server::startListen(int backlog) {
+	if (listen(this->socketFd_, backlog) < 0) {
 		throw std::runtime_error(this->getHost() + ":" + ParseTools::intToString(this->getPort()) + " listen error");
 	}
 }
@@ -252,7 +252,6 @@ Response*	Server::handleError(int statusCode, Location *location) const {
 		res->setStatusCode(statusCode);
 		res->setBody("[Error " + res->getStatusCode() + "] " + res->getStatusMessage());
 	}
-
 	return res;
 }
 
@@ -381,6 +380,55 @@ Response*	Server::handleLogPostRequest(Request const& req, Location *location) c
 		<title>Resource Created</title>\n\
 	</head>\n\
 	<body>\n\
+ 		<h1>Resource created successfully <a href=\"" + req.getUri() + "\">here/</a></h1>\n\
+	</body>\n\
+</html>";
+	res->setMimeByExtension("html");
+	res->setBody(resBody);
+	return res;
+}
+
+Response*	Server::handleUploadPostRequest(Request const& req, Location *location) const {
+	std::string const& body = req.getBody();
+	if (body.length() > location->getClientMaxBodySize()) {
+		std::cout << "body.length() > location->getClientMaxBodySize()" << std::endl;
+		std::cout << "body.length() = " << body.length() << std::endl;
+		std::cout << "location->getClientMaxBodySize() = " << location->getClientMaxBodySize() << std::endl;
+		return handleError(413, location);
+	}
+
+	std::string filePath = location->getUploadPath() + req.getUri().substr(location->getPath().length());
+	File file(filePath);
+	std::string fileExtension = file.getExtension().empty() ? "" : "." + file.getExtension();
+	std::string countDuplicate;
+	while (file.exists()) {
+		filePath =  fileExtension.empty() ? filePath + "_" : filePath.substr(0, filePath.find(fileExtension)) + "_" + fileExtension;
+		countDuplicate += "_";
+		file = File(filePath);
+	}
+	try {
+		file.setFileContent(ParseTools::parseBoundaryBody(body, req.getBoundary()));
+	} catch (OpeningFailed& e) {
+		return handleError(500, location);
+	} catch (ConversionException& e) {
+		return handleError(422, location);
+	}
+	Response *res;
+	if (location->getRedirectStatusCode() > 0) {
+		res = handleRedirection(req, location);
+		std::string locationValue = res->getSingleHeader("Location");
+		res->setSingleHeader("Location", locationValue.substr(0, locationValue.rfind(fileExtension)) + countDuplicate + fileExtension);
+		return res;
+	}
+	res = new Response();
+	res->setStatusCode(201);
+	std::string resBody =\
+"<!DOCTYPE html>\n\
+<html>\n\
+	<head>\n\
+		<title>Resource Created</title>\n\
+	</head>\n\
+	<body>\n\
  		<h1>Resource created successfully</h1>\n\
 	</body>\n\
 </html>";
@@ -394,13 +442,14 @@ Response*	Server::handlePostRequest(Request const& req, Location *location) cons
 	if (location->isPostAllowed() == false) {
 		return handleError(405, location);
 	}
-	return this->handleLogPostRequest(req, location);
 
 	std::string const& contentType = req.getSingleHeader("Content-Type");
 	if (contentType == "application/x-www-form-urlencoded") {
+		return this->handleLogPostRequest(req, location);
+	} else if (contentType.find("multipart/form-data") != std::string::npos)  {
+		return this->handleUploadPostRequest(req, location);
 	}
-
-	return handleError(500, location);
+	return handleError(415, location);
 }
 
 Response*	Server::handleDeleteRequest(Request const& req, Location *location) const {

@@ -37,7 +37,7 @@ class Server {
 			Location*> const&	getLocationsMap(void) const;
 		size_t					getClientLastRequestTime(int clientFd) const;
 
-		void					startListen(void);
+		void					startListen(int backlog);
 
 		int						acceptNewClient(void);
 		Response*				handleClientRequest(Request const& req);
@@ -65,6 +65,7 @@ class Server {
 		Response*				handleGetRequest(Request const& req, Location *location) const;
 		Response*				handlePostRequest(Request const& req, Location *location) const;
 		Response*				handleLogPostRequest(Request const& req, Location *location) const;
+		Response*				handleUploadPostRequest(Request const& req, Location *location) const;
 		Response*				handleDeleteRequest(Request const& req, Location *location) const;
 
 		Response*				handleCgiRequest(Request const& req, Location *location) const;

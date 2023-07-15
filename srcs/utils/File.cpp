@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/20 12:30:35 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/10 16:29:34 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/15 17:19:45 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -196,7 +196,7 @@ void	File::parsePath(void) {
 
 void	File::write(void) {
 
-	std::ofstream	file(this->getFullPath().c_str());
+	std::ofstream	file(this->getFullPath().c_str(), std::ios::binary);
 	if (file.is_open()) {
 		file << this->fileContent_;
 		file.close();
@@ -223,7 +223,7 @@ void	File::append(std::string const& content) {
 	std::ofstream	file(this->getFullPath().c_str(), std::ios_base::app);
 
 	if (file.is_open()) {
-		file << content;
+		file.write(content.c_str(), content.size());
 		file.close();
 	} else {
 		throw OpeningFailed("Cannot open file");

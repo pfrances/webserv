@@ -6,28 +6,32 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 15:00:29 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/14 10:14:36 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/15 18:32:05 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef SERVER_MONITOR_HPP
 # define SERVER_MONITOR_HPP
 
-#ifndef BUFFER_SIZE
-# define BUFFER_SIZE 1024
-#endif
+# ifndef BUFFER_SIZE
+#  define BUFFER_SIZE 1024
+# endif
 
-#ifndef CLIENT_TIMEOUT
-# define CLIENT_TIMEOUT 30000
-#endif
+# ifndef CLIENT_TIMEOUT
+#  define CLIENT_TIMEOUT 30000
+# endif
 
-#ifndef CGI_TIMEOUT
-# define CGI_TIMEOUT 1000
-#endif
+# ifndef CGI_TIMEOUT
+#  define CGI_TIMEOUT 1000
+# endif
 
-#ifndef POLL_TIMEOUT
-# define POLL_TIMEOUT 100
-#endif
+# ifndef POLL_TIMEOUT
+#  define POLL_TIMEOUT 100
+# endif
+
+# ifndef LISTEN_BACKLOG
+#  define LISTEN_BACKLOG 10
+# endif
 
 # include <string>
 # include <vector>

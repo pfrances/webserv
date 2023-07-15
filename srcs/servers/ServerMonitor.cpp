@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/14 10:27:17 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/15 18:58:17 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -119,7 +119,7 @@ void	ServerMonitor::setServersStartListen(void) {
 		int fd = server->getSocketFd();
 
 		this->addNewPollfd(fd, POLLIN);
-		server->startListen();
+		server->startListen(LISTEN_BACKLOG);
 	}
 }
 
@@ -165,32 +165,26 @@ void	ServerMonitor::handleClientRequest(int fd) {
 		return ;
 	}
 
-	std::vector<Request*> resVec = parseMultipleRequest(msg);
-	std::vector<Request*>::iterator it = resVec.begin();
-	std::vector<Request*>::iterator ite = resVec.end();
+	// while (req->isFetched() == false) {
+	// 	std::string msg = this->recvMsg(fd);
+	// 	req->appendToBody(msg);
+	// }
+
+	Request *req = new Request(msg);
 	Server *server = this->clientsMap_[fd];
-	for (; it != ite; it++) {
-		Request *req = *it;
-		while (req->isFetched() == false) {
-			std::string msg = this->recvMsg(fd);
-			req->appendToBody(msg);
-		}
-
-		Response *res = server->handleClientRequest(*req);
-		if (res) {
-			if (res->hasCgiHandler()) {
-				CgiHandler *cgi = res->getCgiHandler();
-				cgi->setStartTime(this->timer_.getCurrentTime());
-				int cgiFd = cgi->getPipeReadFd();
-				this->addNewPollfd(cgiFd, POLLIN);
-				this->cgiHandlersMap_[cgiFd] = cgi;
-				cgi->setClientFd(fd);
-				delete res;
-			} else {
-				this->responsesMap_[fd] = res;
-				this->addEventToPolfd(fd, POLLOUT);
-			}
-
+	Response *res = server->handleClientRequest(*req);
+	if (res) {
+		if (res->hasCgiHandler()) {
+			CgiHandler *cgi = res->getCgiHandler();
+			cgi->setStartTime(this->timer_.getCurrentTime());
+			int cgiFd = cgi->getPipeReadFd();
+			this->addNewPollfd(cgiFd, POLLIN);
+			this->cgiHandlersMap_[cgiFd] = cgi;
+			cgi->setClientFd(fd);
+			delete res;
+		} else {
+			this->responsesMap_[fd] = res;
+			this->addEventToPolfd(fd, POLLOUT);
 		}
 		delete req;
 	}
@@ -307,21 +301,23 @@ std::string	ServerMonitor::readPipe(int fd) const {
 }
 
 std::string ServerMonitor::recvMsg(int fd) const {
-
-	char			buff[BUFFER_SIZE + 1];
-	std::string		msg;
+	std::vector<unsigned char> buffer(BUFFER_SIZE);
+	std::vector<unsigned char> msg;
 
 	while (true) {
-		int	bytesRead = recv(fd, buff, BUFFER_SIZE, 0);
-		buff[bytesRead] = '\0';
-		msg += buff;
+		int bytesRead = recv(fd, buffer.data(), BUFFER_SIZE, 0);
 		if (bytesRead < 0) {
-			throw IoTroubleException("An issue occured while receiving message");
-		} else if (bytesRead < BUFFER_SIZE) {
-			break ;
+			throw IoTroubleException("An issue occurred while receiving message");
+		} else if (bytesRead == 0) {
+			break;
+		} else {
+			msg.insert(msg.end(), buffer.begin(), buffer.begin() + bytesRead);
+			if (bytesRead < BUFFER_SIZE) {
+				break;
+			}
 		}
 	}
-	return msg;
+	return std::string(msg.begin(), msg.end());
 }
 
 void	ServerMonitor::sendMsg(int fd, std::string const& msg) const {

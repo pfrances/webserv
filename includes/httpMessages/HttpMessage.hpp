@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 12:09:28 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/13 19:38:49 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/15 15:21:31 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,6 +44,7 @@ class HttpMessage
 		std::string const&				getBody(void) const;
 		std::string const&				getRawMessage(void) const;
 		std::string const&				getHostName(void) const;
+		std::string const&				getBoundary(void) const;
 
 		bool							isFetched(void) const;
 

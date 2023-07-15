@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:45 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/13 16:59:05 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/15 18:39:44 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -155,8 +155,7 @@ std::vector<Request*> parseMultipleRequest(std::string const& allMsgs) {
 			contentLength = ParseTools::stringToInt(tmp.substr(15));
 		} else if (tmp == "\r") {
 			if (contentLength > 0) {
-				std::string body;
-				std::getline(iss, body, '\0');
+				std::string body = iss.str().substr(iss.tellg());
 				reqStr += body;
 				contentLength = 0;
 			}

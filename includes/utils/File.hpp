@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/20 11:56:13 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/10 16:27:37 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/15 17:05:17 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,7 @@ class File : public Path
 		void				append(std::string const& content);
 
 		void				setKeyValue(std::string const& key, std::string const& value);
-		void				unsetKey(std::string const& key) ;
+		void				unsetKey(std::string const& key);
 
 		std::map<std::string, std::string>	getFilesListing(void) const;
 

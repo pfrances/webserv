@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 12:27:17 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/13 18:06:50 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/15 18:53:05 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,8 +94,12 @@ std::string const&	HttpMessage::getRawMessage(void) const {
 	return (this->rawMessage_);
 }
 
-std::string const&		HttpMessage::getHostName(void) const{
+std::string const&		HttpMessage::getHostName(void) const {
 	return this->hostName_;
+}
+
+std::string const&		HttpMessage::getBoundary(void) const {
+	return this->boundary_;
 }
 
 bool	HttpMessage::isFetched(void) const {
@@ -143,7 +147,7 @@ void	HttpMessage::appendToBody(std::string const& chunk) {
 	this->body_ += chunk;
 	this->setSingleHeader("Content-Length", ParseTools::intToString(this->body_.length()));
 	this->updateRawMessage();
-	if (this->body_.length() == this->totalSize_) {
+	if (this->body_.length() >= this->totalSize_) {
 		this->chunksFetched_ = true;
 	}
 }
@@ -172,10 +176,10 @@ void	HttpMessage::parseRawMessage() {
 	}
 	this->parseHeadersMap();
 
-	std::string body;
-	std::getline(iss, body, '\0');
-	if (!body.empty())
+	std::string body = iss.str().substr(iss.tellg());
+	if (!body.empty()) {
 		this->parseBody(body);
+	}
 }
 
 std::pair<std::string, std::string>	HttpMessage::parseSingleHeader(std::string const& header) {
@@ -183,7 +187,7 @@ std::pair<std::string, std::string>	HttpMessage::parseSingleHeader(std::string c
 	std::string		value;
 
 	key = header.substr(0, header.find(": "));
-	value = header.substr(header.find(": ") + 2);
+	value = header.substr(header.find(": ") + 2, header.find("\r") - header.find(": ") - 2);
 
 	return (std::make_pair(key, value));
 }
@@ -204,10 +208,11 @@ void	HttpMessage::parseBody(std::string const& body) {
 	if (this->headersMap_.find("Content-Length") != this->headersMap_.end()) {
 		this->totalSize_ = ParseTools::stringToInt(this->getSingleHeader("Content-Length"));
 	}
+
 	std::string const& contentType = this->getSingleHeader("Content-Type");
 
 	if (contentType.find("multipart/form-data") != std::string::npos) {
-		this->boundary_ = contentType.substr(contentType.find("bundary=") + 8);
+		this->boundary_ = contentType.substr(contentType.find("boundary=") + 9);
 		this->chunksFetched_ = false;
 		if (body.length() > 0) {
 			this->setBody(body);

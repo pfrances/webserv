@@ -4,10 +4,13 @@ server {
 
 	root webservPages;
 	error_page 404 webservPages/errorPages/404.html;
-	client_body_size 1m;
 
 	location / {
 		autoindex on;
+	}
+
+	location /upload {
+		return 301 http://server2:8080/upload;
 	}
 }
 
@@ -36,6 +39,7 @@ server {
 	server_name server2;
 
 	root webservPages;
+	client_body_size 1m;
 	index index2.html;
 
 	location /upload {

@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 17:58:48 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/10 16:19:55 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/15 17:55:52 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -179,4 +179,22 @@ bool	ParseTools::isValidToken(std::string const& token, std::string const& forbi
 		return false;
 	}
 	return true;
+}
+
+std::string ParseTools::parseBoundaryBody(std::string const& body, std::string const& boundary) {
+	std::string delimiter = "--" + boundary + "\r\n";
+	size_t start_index = body.find(delimiter);
+	if (start_index == std::string::npos) {
+		throw ConversionException("ParseTools::parseBoundaryBody: invalid boundary.");
+	}
+	start_index = body.find("\r\n\r\n", start_index);
+	if (start_index == std::string::npos) {
+		throw ConversionException("ParseTools::parseBoundaryBody: invalid content format.");
+	}
+	start_index += 4;
+
+	size_t end_index = body.find("\r\n--" + boundary + "--\r\n", start_index);
+	std::string content = body.substr(start_index, end_index - start_index);
+
+	return content;
 }
