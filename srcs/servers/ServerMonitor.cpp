@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 15:51:06 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 17:16:57 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -143,7 +143,7 @@ void	ServerMonitor::handleNewConnection(int fd) {
 	server->setClientLastRequestTime(clientfd, this->timer_.getElapsedTimeSince());
 }
 
-int	ServerMonitor::getPollfdsVecIndxFromFd(int fd) const {
+int	ServerMonitor::getPollfdsVecIndexFromFd(int fd) const {
 	std::vector<pollfd>::const_iterator it = pollfdsVec_.begin();
 	std::vector<pollfd>::const_iterator ite = pollfdsVec_.end();
 	for (int i = 0; it != ite; it++, i++) {

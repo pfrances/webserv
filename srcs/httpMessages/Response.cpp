@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:21 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 10:57:28 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 18:14:11 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -193,7 +193,11 @@ void	Response::parseStartLine(void) {
 	std::string tmp;
 
 	std::getline(iss, tmp, ' ');
-	this->setHttpVersion(tmp);
+	if (tmp == "Status:") {
+		this->setHttpVersion("HTTP/1.1");
+	} else {
+		this->setHttpVersion(tmp);
+	}
 
 	std::getline(iss, tmp, ' ');
 	this->setStatusCode(tmp);

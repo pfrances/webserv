@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:44:51 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 15:32:31 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 18:22:07 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,7 +109,9 @@ void	CgiHandler::setEnvKey(std::string const& key, std::string const& value) {
 }
 
 void	CgiHandler::setEnv(Request const& req) {
+	this->setEnvKey("SERVER_PROTOCOL", req.getHttpVersion());
 	this->setEnvKey("REQUEST_METHOD", req.getMethod());
+	this->setEnvKey("PATH_INFO", ".");
 	this->setEnvKey("SERVER_NAME", req.getHostName());
 	this->setEnvKey("QUERY_STRING", req.getQueryStr());
 	this->setEnvKey("CONTENT_TYPE", req.getSingleHeader("Content-Type"));
@@ -144,6 +146,7 @@ void CgiHandler::executeCgi(void) {
 	}
 
 	if (this->pid_ == 0) {
+		// close(STDERR_FILENO);
 		dup2(this->pipe_[0], STDIN_FILENO);
 		dup2(this->pipe_[1], STDOUT_FILENO);
 		close(this->pipe_[1]);

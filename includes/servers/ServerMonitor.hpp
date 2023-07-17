@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 15:00:29 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 15:54:59 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 16:23:50 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,7 +81,7 @@ class ServerMonitor
 		void						sendBodyToCgi(int fd);
 		void						sendMsg(int fd, std::string const& msg) const;
 
-		int							getPollfdsVecIndxFromFd(int fd) const;
+		int							getPollfdsVecIndexFromFd(int fd) const;
 		void						addNewPollfd(int fd, short events);
 		void						addEventToPollfd(int fd, short event);
 		void						RemoveEventToPollfd(int fd, short event);
