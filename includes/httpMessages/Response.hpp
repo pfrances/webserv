@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:20:20 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/12 17:02:33 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 10:54:44 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,10 +35,14 @@ class Response : public HttpMessage {
 		void				setStatusMessage(std::string const& statusMessage);
 		void				setStatusMessageFromCode(int statusCode);
 		void				setHttpVersion(std::string const& httpVersion);
-		void				setCgiHandler(std::string const& path, std::string const& cgiExecutor);
+		void				setCgiHandler(std::string const& path, std::string const& cgiExecutor, Request const& request);
 		void				setClientFd(int fd);
 
 		bool				hasCgiHandler(void) const;
+
+		virtual bool		isValid(void) const;
+		bool				isHttpVersionValid(void) const;
+		bool				isStatusCodeValid(void) const;
 
 	private:
 		virtual	void		parseStartLine(void);

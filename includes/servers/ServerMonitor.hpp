@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 15:00:29 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/15 18:32:05 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 11:54:31 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,11 +73,12 @@ class ServerMonitor
 		void						handleNewConnection(int fd);
 		void						handleClientRequest(int fd);
 		void						handleResponseToSend(int fd);
-		void						handleCgiResponse(int fd);
+		void						handleCgiResponse(pollfd const& pollfd);
 		void						handleEvents(void);
 
 		std::string					recvMsg(int fd) const;
 		std::string					readPipe(int fd) const;
+		void						sendBodyToCgi(int fd);
 		void						sendMsg(int fd, std::string const& msg) const;
 
 		int							getPollfdsVecIndxFromFd(int fd) const;
@@ -86,7 +87,6 @@ class ServerMonitor
 		void						RemoveEventToPolfd(int fd, short event);
 		void						removePollfd(int fd);
 
-		void						updatePollfdVec(void);
 		void						checkTimeOut(void);
 };
 

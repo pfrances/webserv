@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 19:02:03 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/13 12:36:34 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 10:48:48 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ class Request : public HttpMessage {
 		std::string const&		getUriWithQuery(void) const;
 		std::map<std::string,
 			std::string> const&	getQuery(void) const;
+		std::string const&		getQueryStr(void) const;
 		std::string const&		getHttpVersion(void) const;
 
 		void					setMethod(std::string const& method);
@@ -39,7 +40,7 @@ class Request : public HttpMessage {
 		bool					isMethodValid(void) const;
 		bool					isUriValid(void) const;
 		bool					isHttpVersionValid(void) const;
-		bool					isRequestValid(void) const;
+		virtual bool			isValid(void) const;
 
 	private:
 		virtual	void			parseStartLine(void);
@@ -49,6 +50,7 @@ class Request : public HttpMessage {
 		std::string				uri_;
 		std::map<std::string,
 				 std::string>	query_;
+		std::string				queryStr_;
 		std::string				uriWithQuery_;
 
 		std::string				httpVersion_;

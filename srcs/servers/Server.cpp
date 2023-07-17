@@ -288,7 +288,7 @@ Response*	Server::handleIndexing(File const& file, Request const& req, Location 
 		index = File(file.getFullPath() + "/" + *it);
 		if (location->isCgiLocation() && index.exists()) {
 			Response *res = new Response();
-			res->setCgiHandler(index.getFullPath(), location->getCgiExecutorByExtension(index.getExtension()));
+			res->setCgiHandler(index.getFullPath(), location->getCgiExecutorByExtension(index.getExtension()), req);
 			return res;
 		} else if (index.isReadable()) {
 			std::string const& indexContent = index.getFileContent();
@@ -391,9 +391,6 @@ Response*	Server::handleLogPostRequest(Request const& req, Location *location) c
 Response*	Server::handleUploadPostRequest(Request const& req, Location *location) const {
 	std::string const& body = req.getBody();
 	if (body.length() > location->getClientMaxBodySize()) {
-		std::cout << "body.length() > location->getClientMaxBodySize()" << std::endl;
-		std::cout << "body.length() = " << body.length() << std::endl;
-		std::cout << "location->getClientMaxBodySize() = " << location->getClientMaxBodySize() << std::endl;
 		return handleError(413, location);
 	}
 
@@ -509,11 +506,11 @@ Response*	Server::handleCgiRequest(Request const& req, Location *location) const
 		File cgi(path + *it);
 		if (cgi.exists() == true) {
 			Response *res = new Response();
-			res->setCgiHandler(cgi.getFullPath(), location->getCgiExecutorByExtension(*it));
+			res->setCgiHandler(cgi.getFullPath(), location->getCgiExecutorByExtension(*it), req);
 			return res;
 		}
 	}
-	return handleError(501, location);
+	return handleError(404, location);
 }
 
 Response *Server::handleRedirection(Request const& req, Location *location) const {
@@ -538,8 +535,8 @@ Response *Server::handleRedirection(Request const& req, Location *location) cons
 
 Response*	Server::handleClientRequest(Request const& req) {
 
-	std::cout << req.getHostName() << " " << req.getStartLine() << std::endl;
-	if (req.isRequestValid() == false) {
+	std::cout << "Req:\t" << req.getStartLine() << "\t(" << req.getHostName() << ")" << std::endl;
+	if (req.isValid() == false) {
 		return this->handleError(400, this->locationsMap_.find("/")->second);
 	}
 

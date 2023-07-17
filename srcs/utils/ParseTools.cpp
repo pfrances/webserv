@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 17:58:48 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/15 17:55:52 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/16 15:51:42 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -107,7 +107,7 @@ std::string	ParseTools::intToString(int nb) {
 int	ParseTools::stringToInt(std::string const& str) {
 	std::istringstream iss(str);
 	int value = 0;
-	if (!(iss >> value)) {
+	if (!str.empty() && !(iss >> value)) {
 		throw std::runtime_error("Failed to convert string to int");
 	}
 	return value;

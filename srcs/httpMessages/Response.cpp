@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:21 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/15 11:45:04 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 10:57:28 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,11 @@ Response::Response(std::string const& rawResponse) :	HttpMessage(rawResponse),
 														statusMessage_(""),
 														httpVersion_(""),
 														cgiHandler_(NULL) {
-	parseStartLine();
+	try {
+		parseStartLine();
+	} catch (std::exception& e) {
+		isValid_ = false;
+	}
 }
 
 Response::~Response(void) {
@@ -175,11 +179,12 @@ void	Response::setHttpVersion(std::string const& httpVersion) {
 	this->updateRawMessage();
 }
 
-void	Response::setCgiHandler(std::string const& path, std::string const& cgiExecutor) {
+void	Response::setCgiHandler(std::string const& path, std::string const& cgiExecutor, Request const& request) {
 	if (this->cgiHandler_ != NULL) {
 		delete this->cgiHandler_;
 	}
 	this->cgiHandler_ = new CgiHandler(path, cgiExecutor);
+	this->cgiHandler_->setEnv(request);
 	this->cgiHandler_->executeCgi();
 }
 
@@ -199,4 +204,21 @@ void	Response::parseStartLine(void) {
 
 void	Response::updateStartLine(void) {
 	this->setStartLine(this->httpVersion_ + " " + this->statusCode_ + " " + this->statusMessage_);
+}
+
+bool	Response::isHttpVersionValid(void) const {
+	return (this->httpVersion_ == "HTTP/1.1");
+}
+
+bool	Response::isStatusCodeValid(void) const {
+	try {
+		int statusCode = ParseTools::stringToInt(this->statusCode_);
+		return (statusCode >= 100 && statusCode <= 599);
+	} catch (std::exception& e) {
+		return (false);
+	}
+}
+
+bool	Response::isValid(void) const {
+	return (HttpMessage::isValid() && isHttpVersionValid() && isStatusCodeValid());
 }

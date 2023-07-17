@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 12:27:17 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/15 18:53:05 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 10:43:30 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,8 @@ HttpMessage::HttpMessage(void) :	rawMessage_(""),
 									chunksFetched_(true),
 									totalSize_(0),
 									boundary_(""),
-									hostName_("") {
+									hostName_(""),
+									isValid_(true) {
 
 }
 
@@ -34,8 +35,13 @@ HttpMessage::HttpMessage(std::string const& rawMessage) :	rawMessage_(rawMessage
 															chunksFetched_(true),
 															totalSize_(0),
 															boundary_(""),
-															hostName_("") {
-	parseRawMessage();
+															hostName_(""),
+															isValid_(true) {
+	try {
+		parseRawMessage();
+	} catch (std::exception& e) {
+		isValid_ = false;
+	}
 }
 
 HttpMessage::HttpMessage(HttpMessage const& other) :	rawMessage_(other.rawMessage_),
@@ -45,7 +51,8 @@ HttpMessage::HttpMessage(HttpMessage const& other) :	rawMessage_(other.rawMessag
 														chunksFetched_(other.chunksFetched_),
 														totalSize_(other.totalSize_),
 														boundary_(other.boundary_),
-														hostName_(other.hostName_) {
+														hostName_(other.hostName_),
+														isValid_(other.isValid_) {
 	if (this != &other) {
 		*this = other;
 	}
@@ -61,6 +68,7 @@ HttpMessage&	HttpMessage::operator=(HttpMessage const& other) {
 		this->totalSize_ = other.totalSize_;
 		this->boundary_ = other.boundary_;
 		this->hostName_ = other.hostName_;
+		this->isValid_ = other.isValid_;
 	}
 	return (*this);
 }
@@ -82,8 +90,11 @@ std::map<std::string, std::string>const&	HttpMessage::getHeadersMap(void) const 
 	return (this->headersMap_);
 }
 
-std::string const&	HttpMessage::getSingleHeader(std::string const& key) const {
-	return (this->headersMap_.at(key));
+std::string	HttpMessage::getSingleHeader(std::string const& key) const {
+	if (this->headersMap_.find(key) != this->headersMap_.end()) {
+		return this->headersMap_.at(key);
+	}
+	return std::string();
 }
 
 std::string const&	HttpMessage::getBody(void) const {
@@ -104,6 +115,10 @@ std::string const&		HttpMessage::getBoundary(void) const {
 
 bool	HttpMessage::isFetched(void) const {
 	return this->chunksFetched_;
+}
+
+bool HttpMessage::isValid(void) const {
+	return (this->isValid_ && this->hasStartLine() && this->hasHeaders());
 }
 
 /****************************Setters****************************/

@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/15 18:58:17 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 11:56:01 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -165,11 +165,6 @@ void	ServerMonitor::handleClientRequest(int fd) {
 		return ;
 	}
 
-	// while (req->isFetched() == false) {
-	// 	std::string msg = this->recvMsg(fd);
-	// 	req->appendToBody(msg);
-	// }
-
 	Request *req = new Request(msg);
 	Server *server = this->clientsMap_[fd];
 	Response *res = server->handleClientRequest(*req);
@@ -177,9 +172,14 @@ void	ServerMonitor::handleClientRequest(int fd) {
 		if (res->hasCgiHandler()) {
 			CgiHandler *cgi = res->getCgiHandler();
 			cgi->setStartTime(this->timer_.getCurrentTime());
-			int cgiFd = cgi->getPipeReadFd();
-			this->addNewPollfd(cgiFd, POLLIN);
-			this->cgiHandlersMap_[cgiFd] = cgi;
+			int cgiReadFd = cgi->getPipeReadFd();
+			this->addNewPollfd(cgiReadFd, POLLIN);
+			if (req->getMethod() != "GET" && !req->getBody().empty()) {
+				int cgiWriteFd = cgi->getPipeWriteFd();
+				this->addNewPollfd(cgiWriteFd, POLLOUT);
+				this->cgiHandlersMap_[cgiWriteFd] = cgi;
+			}
+			this->cgiHandlersMap_[cgiReadFd] = cgi;
 			cgi->setClientFd(fd);
 			delete res;
 		} else {
@@ -191,19 +191,23 @@ void	ServerMonitor::handleClientRequest(int fd) {
 	server->setClientLastRequestTime(fd, this->timer_.getCurrentTime());
 }
 
-void	ServerMonitor::handleCgiResponse(int fd) {
+void	ServerMonitor::handleCgiResponse(pollfd const& pollfd) {
 
-	std::string msg = this->readPipe(fd);
-
-	CgiHandler *cgi = this->cgiHandlersMap_[fd];
-	int clientFd = cgi->getClientFd();
-	closeConnection(fd);
-
-	if (msg.empty()) {
-		return ;
+	std::string msg;
+	if (pollfd.revents & POLLIN) {
+		msg = this->readPipe(pollfd.fd);
 	}
 
+	CgiHandler *cgi = this->cgiHandlersMap_[pollfd.fd];
+	int clientFd = cgi->getClientFd();
+	closeConnection(pollfd.fd);
+
 	Response *res = new Response(msg);
+	if (res->isValid() == false) {
+		delete res;
+		Server *server = this->clientsMap_[clientFd];
+		res = server->handleError(500);
+	}
 	this->responsesMap_[clientFd] = res;
 	this->addEventToPolfd(clientFd, POLLOUT);
 }
@@ -212,6 +216,7 @@ void	ServerMonitor::handleResponseToSend(int fd) {
 
 	Response *res = this->responsesMap_[fd];
 	if (res) {
+		std::cout << "Res:\t" << res->getStartLine() << std::endl;
 		std::string const& msg = res->getRawMessage();
 		this->sendMsg(fd, msg);
 
@@ -221,11 +226,25 @@ void	ServerMonitor::handleResponseToSend(int fd) {
 	this->responsesMap_.erase(fd);
 }
 
+void	ServerMonitor::sendBodyToCgi(int fd) {
+	std::cout << "send body to cgi" << std::endl;
+	CgiHandler *cgi = this->cgiHandlersMap_[fd];
+	if (cgi) {
+		cgi->writeBodyToCgiStdin();
+	}
+	removePollfd(fd);
+	this->cgiHandlersMap_.erase(fd);
+}
+
 void	ServerMonitor::handleEvents(void) {
 	for (size_t i = 0; i < pollfdsVec_.size(); i++) {
 		try {
 			if (pollfdsVec_[i].revents & (POLLHUP | POLLERR | POLLNVAL)) {
-				this->closeConnection(pollfdsVec_[i].fd);
+				if ((this->cgiHandlersMap_.find(pollfdsVec_[i].fd) != this->cgiHandlersMap_.end())) {
+					this->handleCgiResponse(pollfdsVec_[i]);
+				} else {
+					this->closeConnection(pollfdsVec_[i].fd);
+				}
 			}
 			if (pollfdsVec_[i].revents & POLLIN) {
 				if (pollfdsVec_[i].fd == STDIN_FILENO) {
@@ -234,13 +253,13 @@ void	ServerMonitor::handleEvents(void) {
 					this->handleNewConnection(pollfdsVec_[i].fd);
 				} else if (this->clientsMap_.find(pollfdsVec_[i].fd) != this->clientsMap_.end()) {
 					this->handleClientRequest(pollfdsVec_[i].fd);
-				} else if (this->cgiHandlersMap_.find(pollfdsVec_[i].fd) != this->cgiHandlersMap_.end()) {
-					this->handleCgiResponse(pollfdsVec_[i].fd);
 				}
 			}
 			if (pollfdsVec_[i].revents & POLLOUT) {
 				if (this->clientsMap_.find(pollfdsVec_[i].fd) != this->clientsMap_.end()) {
 					this->handleResponseToSend(pollfdsVec_[i].fd);
+				} else if (this->cgiHandlersMap_.find(pollfdsVec_[i].fd) != this->cgiHandlersMap_.end()) {
+					this->sendBodyToCgi(pollfdsVec_[i].fd);
 				}
 			}
 		} catch (IoTroubleException &e) {
@@ -348,7 +367,7 @@ void	ServerMonitor::removePollfd(int fd) {
 	std::vector<pollfd>::iterator it = this->pollfdsVec_.begin();
 	std::vector<pollfd>::iterator ite = this->pollfdsVec_.end();
 	for (; it != ite; it++) {
-		if (it->fd == fd) {
+		if (it->fd == fd && fd > 0) {
 			close(fd);
 			it->fd = -1;
 			it->events = 0;
@@ -385,7 +404,6 @@ void	ServerMonitor::checkTimeOut(void) {
 	std::map<int, CgiHandler*>::iterator itCgi = this->cgiHandlersMap_.begin();
 	std::map<int, CgiHandler*>::iterator iteCgi = this->cgiHandlersMap_.end();
 	for (; itCgi != iteCgi; itCgi++) {
-		int	cgiFd = itCgi->first;
 		CgiHandler* cgiHandler = itCgi->second;
 		if (this->timer_.getElapsedTimeSince(cgiHandler->getStartTime()) > CGI_TIMEOUT) {
 			int clientFd = cgiHandler->getClientFd();
@@ -393,7 +411,8 @@ void	ServerMonitor::checkTimeOut(void) {
 			Response *res = server->handleError(504);
 			this->responsesMap_[clientFd] = res;
 			this->addEventToPolfd(clientFd, POLLOUT);
-			fdsToClose.push_back(cgiFd);
+			fdsToClose.push_back(cgiHandler->getPipeReadFd());
+			fdsToClose.push_back(cgiHandler->getPipeWriteFd());
 		}
 	}
 

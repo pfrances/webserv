@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:45 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/15 18:39:44 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 10:49:08 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@ Request::Request(void) :	HttpMessage(),
 							method_(""),
 							uri_(""),
 							query_(),
+							queryStr_(""),
 							uriWithQuery_(""),
 							httpVersion_("") {
 
@@ -28,15 +29,21 @@ Request::Request(std::string const& rawRequest) :	HttpMessage(rawRequest),
 													method_(""),
 													uri_(""),
 													query_(),
+													queryStr_(""),
 													uriWithQuery_(""),
 													httpVersion_("") {
-	parseStartLine();
+	try {
+		parseStartLine();
+	} catch (std::exception& e) {
+		this->isValid_ = false;
+	}
 }
 
 Request::Request(Request const& other) :	HttpMessage(other),
 											method_(other.method_),
 											uri_(other.uri_),
 											query_(other.query_),
+											queryStr_(other.queryStr_),
 											uriWithQuery_(other.uriWithQuery_),
 											httpVersion_(other.httpVersion_) {
 
@@ -48,6 +55,7 @@ Request &Request::operator=(Request const& other) {
 		this->method_ = other.method_;
 		this->uri_ = other.uri_;
 		this->query_ = other.query_;
+		this->queryStr_ = other.queryStr_;
 		this->uriWithQuery_ = other.uriWithQuery_;
 		this->httpVersion_ = other.httpVersion_;
 	}
@@ -74,6 +82,10 @@ std::map<std::string, std::string> const&	Request::getQuery(void) const {
 	return (this->query_);
 }
 
+std::string const&	Request::getQueryStr(void) const {
+	return (this->queryStr_);
+}
+
 std::string const&	Request::getHttpVersion(void) const {
 	return (this->httpVersion_);
 }
@@ -90,8 +102,8 @@ bool	Request::isHttpVersionValid(void) const {
 	return (this->httpVersion_ == "HTTP/1.1");
 }
 
-bool	Request::isRequestValid(void) const {
-	return (this->isMethodValid() && this->isUriValid() && this->isHttpVersionValid());
+bool	Request::isValid(void) const {
+	return (HttpMessage::isValid() && isMethodValid() && isUriValid() && isHttpVersionValid());
 }
 
 void	Request::setMethod(std::string const& method) {
@@ -107,6 +119,7 @@ void	Request::setUri(std::string const& uri) {
 }
 
 void	Request::setQuery(std::string const& queryStr) {
+	this->queryStr_ = queryStr;
 	this->query_ = ParseTools::parseQuery(queryStr);
 }
 

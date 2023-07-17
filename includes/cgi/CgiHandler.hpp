@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:45:00 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/13 19:36:31 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/16 15:33:59 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,8 @@
 # include <unistd.h>
 # include <sys/types.h>
 # include <sys/wait.h>
+# include "Location.hpp"
+# include "Request.hpp"
 
 class CgiHandler {
 	public:
@@ -39,6 +41,9 @@ class CgiHandler {
 		void							setCgiPath(std::string const& path);
 		void							setClientFd(int fd);
 		void							setStartTime(size_t time);
+		void							setEnvKey(std::string const& key, std::string const& value);
+		void							setEnv(Request const& req);
+		void							writeBodyToCgiStdin(void);
 
 	private:
 		CgiHandler(void);
@@ -50,6 +55,7 @@ class CgiHandler {
 		std::vector<std::string>	argsVec_;
 		int							clientFd_;
 		size_t						startTime_;
+		std::string					body_;
 
 		char *const*				StringVecToCharPtrArray(std::vector<std::string> const& vec) const;
 };

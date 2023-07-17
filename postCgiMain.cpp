@@ -1,8 +1,12 @@
 #include <iostream>
 #include <unistd.h>
 
-int main(void) {
-	sleep(10);
+int main(int argc, char *argv[], char *env[]) {
+
+	std::string body;
+	if (argc > 0) {
+		
+	}
 	std::cout << "HTTP/1.1 200 OK\r\n"
 			<< "Content-Type: text/html\r\n"
 			<< "\r\n"

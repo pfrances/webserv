@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 12:09:28 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/15 15:21:31 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 10:48:25 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ class HttpMessage
 		void							setRawMessage(std::string const& rawMessage);
 
 		std::string const&				getStartLine(void) const;
-		std::string const&				getSingleHeader(std::string const& key) const;
+		std::string						getSingleHeader(std::string const& key) const;
 		std::map<std::string,
 				std::string>const&		getHeadersMap(void) const;
 		std::string const&				getHeadersStr(void) const;
@@ -47,6 +47,7 @@ class HttpMessage
 		std::string const&				getBoundary(void) const;
 
 		bool							isFetched(void) const;
+		virtual bool					isValid(void) const;
 
 		bool							hasStartLine(void) const;
 		bool							hasHeaders(void) const;
@@ -68,6 +69,8 @@ class HttpMessage
 		size_t							totalSize_;
 		std::string						boundary_;
 		std::string						hostName_;
+
+		bool							isValid_;
 
 		virtual void					parseStartLine(void) = 0;
 		virtual void					updateStartLine(void) = 0;
