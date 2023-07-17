@@ -380,7 +380,7 @@ Response*	Server::handleLogPostRequest(Request const& req, Location *location) c
 		<title>Resource Created</title>\n\
 	</head>\n\
 	<body>\n\
- 		<h1>Resource created successfully <a href=\"" + req.getUri() + "\">here/</a></h1>\n\
+ 		<h1>Resource created successfully <a href=\"" + req.getUri() + "\">here</a></h1>\n\
 	</body>\n\
 </html>";
 	res->setMimeByExtension("html");
@@ -438,6 +438,10 @@ Response*	Server::handlePostRequest(Request const& req, Location *location) cons
 
 	if (location->isPostAllowed() == false) {
 		return handleError(405, location);
+	}
+
+	if (location->isCgiLocation()) {
+		return this->handleCgiRequest(req, location);
 	}
 
 	std::string const& contentType = req.getSingleHeader("Content-Type");
@@ -535,7 +539,6 @@ Response *Server::handleRedirection(Request const& req, Location *location) cons
 
 Response*	Server::handleClientRequest(Request const& req) {
 
-	std::cout << "Req:\t" << req.getStartLine() << "\t(" << req.getHostName() << ")" << std::endl;
 	if (req.isValid() == false) {
 		return this->handleError(400, this->locationsMap_.find("/")->second);
 	}

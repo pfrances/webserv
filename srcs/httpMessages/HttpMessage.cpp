@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 12:27:17 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 10:43:30 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 13:17:11 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,6 +37,11 @@ HttpMessage::HttpMessage(std::string const& rawMessage) :	rawMessage_(rawMessage
 															boundary_(""),
 															hostName_(""),
 															isValid_(true) {
+	if (rawMessage.empty()) {
+		this->isValid_ = false;
+		return ;
+	}
+	
 	try {
 		parseRawMessage();
 	} catch (std::exception& e) {

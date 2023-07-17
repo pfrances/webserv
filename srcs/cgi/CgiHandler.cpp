@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:44:51 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 11:22:50 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 12:23:57 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -144,7 +144,6 @@ void CgiHandler::executeCgi(void) {
 	}
 
 	if (this->pid_ == 0) {
-		close(STDERR_FILENO);
 		dup2(this->pipe_[0], STDIN_FILENO);
 		dup2(this->pipe_[1], STDOUT_FILENO);
 		close(this->pipe_[1]);

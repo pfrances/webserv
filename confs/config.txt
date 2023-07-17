@@ -22,7 +22,7 @@ server {
 	error_page 404 webservPages/errorPages/404.html;
 
 	location / {
-		return 301 /cgi-bin;
+		index cgiIndex.html;
 	}
 
 	location /cgi-bin {

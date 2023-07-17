@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 15:00:29 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 11:54:31 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 14:12:20 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,9 +53,8 @@ class ServerMonitor
 		~ServerMonitor(void);
 
 		void					run(void);
-
-
 		void					closeConnection(int fd);
+		void					switchLogs(void);
 
 	private:
 		std::map<int, Server*>		serversMap_;
@@ -64,6 +63,7 @@ class ServerMonitor
 		std::map<int, Response*>	responsesMap_;
 		std::vector<pollfd>			pollfdsVec_;
 		Timer						timer_;
+		bool						logsOn_;
 
 		void						parseConfigFile(std::string const& configFileName);
 
@@ -83,8 +83,9 @@ class ServerMonitor
 
 		int							getPollfdsVecIndxFromFd(int fd) const;
 		void						addNewPollfd(int fd, short events);
-		void						addEventToPolfd(int fd, short event);
-		void						RemoveEventToPolfd(int fd, short event);
+		void						addEventToPollfd(int fd, short event);
+		void						RemoveEventToPollfd(int fd, short event);
+		void						setEventsToPollfd(int fd, short event);
 		void						removePollfd(int fd);
 
 		void						checkTimeOut(void);

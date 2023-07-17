@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 11:56:01 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 14:20:29 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,8 @@ ServerMonitor::ServerMonitor(std::string const& confFileName) :	serversMap_(),
 																cgiHandlersMap_(),
 																responsesMap_(),
 																pollfdsVec_(),
-																timer_() {
+																timer_(),
+																logsOn_(false) {
 	this->addNewPollfd(STDIN_FILENO, POLLIN);
 	this->parseConfigFile(confFileName);
 }
@@ -34,7 +35,8 @@ ServerMonitor::ServerMonitor(ServerMonitor const& other) :	serversMap_(other.ser
 															cgiHandlersMap_(other.cgiHandlersMap_),
 															responsesMap_(other.responsesMap_),
 															pollfdsVec_(other.pollfdsVec_),
-															timer_(other.timer_) {
+															timer_(other.timer_),
+															logsOn_(other.logsOn_) {
 
 }
 
@@ -46,6 +48,7 @@ ServerMonitor &ServerMonitor::operator=(ServerMonitor const& other) {
 		this->cgiHandlersMap_ = other.cgiHandlersMap_;
 		this->pollfdsVec_ = other.pollfdsVec_;
 		this->timer_ = other.timer_;
+		this->logsOn_ = other.logsOn_;
 	}
 	return (*this);
 }
@@ -156,6 +159,8 @@ void	ServerMonitor::handleUserInput(void) {
 	std::getline(std::cin, msg);
 	if (msg == "exit") {
 		throw ShutdownException("Shutting down...");
+	} else if (msg == "log" || msg == "logs") {
+		this->switchLogs();
 	}
 }
 
@@ -166,28 +171,30 @@ void	ServerMonitor::handleClientRequest(int fd) {
 	}
 
 	Request *req = new Request(msg);
+	if (this->logsOn_) {
+		std::cout << "REQUEST:\t" << req->getStartLine() << "\t(" << req->getHostName() << ")" << std::endl;
+	}
 	Server *server = this->clientsMap_[fd];
 	Response *res = server->handleClientRequest(*req);
-	if (res) {
-		if (res->hasCgiHandler()) {
-			CgiHandler *cgi = res->getCgiHandler();
-			cgi->setStartTime(this->timer_.getCurrentTime());
-			int cgiReadFd = cgi->getPipeReadFd();
-			this->addNewPollfd(cgiReadFd, POLLIN);
-			if (req->getMethod() != "GET" && !req->getBody().empty()) {
-				int cgiWriteFd = cgi->getPipeWriteFd();
-				this->addNewPollfd(cgiWriteFd, POLLOUT);
-				this->cgiHandlersMap_[cgiWriteFd] = cgi;
-			}
-			this->cgiHandlersMap_[cgiReadFd] = cgi;
-			cgi->setClientFd(fd);
-			delete res;
-		} else {
-			this->responsesMap_[fd] = res;
-			this->addEventToPolfd(fd, POLLOUT);
+	if (res->hasCgiHandler()) {
+		CgiHandler *cgi = res->getCgiHandler();
+		cgi->setStartTime(this->timer_.getCurrentTime());
+		int cgiReadFd = cgi->getPipeReadFd();
+		this->addNewPollfd(cgiReadFd, POLLIN);
+		if (req->getMethod() != "GET" && !req->getBody().empty()) {
+			int cgiWriteFd = cgi->getPipeWriteFd();
+			this->addNewPollfd(cgiWriteFd, POLLOUT);
+			this->cgiHandlersMap_[cgiWriteFd] = cgi;
 		}
-		delete req;
+		this->cgiHandlersMap_[cgiReadFd] = cgi;
+		cgi->setClientFd(fd);
+		delete res;
+		this->RemoveEventToPollfd(fd, POLLIN);
+	} else {
+		this->responsesMap_[fd] = res;
+		this->setEventsToPollfd(fd, POLLOUT);
 	}
+	delete req;
 	server->setClientLastRequestTime(fd, this->timer_.getCurrentTime());
 }
 
@@ -209,25 +216,26 @@ void	ServerMonitor::handleCgiResponse(pollfd const& pollfd) {
 		res = server->handleError(500);
 	}
 	this->responsesMap_[clientFd] = res;
-	this->addEventToPolfd(clientFd, POLLOUT);
+	this->setEventsToPollfd(clientFd, POLLOUT);
 }
 
 void	ServerMonitor::handleResponseToSend(int fd) {
 
 	Response *res = this->responsesMap_[fd];
 	if (res) {
-		std::cout << "Res:\t" << res->getStartLine() << std::endl;
+		if (this->logsOn_) {
+			std::cout << "RESPONSE:\t" << res->getStartLine() << std::endl;
+		}
 		std::string const& msg = res->getRawMessage();
 		this->sendMsg(fd, msg);
 
-		this->RemoveEventToPolfd(fd, POLLOUT);
+		this->setEventsToPollfd(fd, POLLIN);
 		delete res;
 	}
 	this->responsesMap_.erase(fd);
 }
 
 void	ServerMonitor::sendBodyToCgi(int fd) {
-	std::cout << "send body to cgi" << std::endl;
 	CgiHandler *cgi = this->cgiHandlersMap_[fd];
 	if (cgi) {
 		cgi->writeBodyToCgiStdin();
@@ -376,7 +384,7 @@ void	ServerMonitor::removePollfd(int fd) {
 	}
 }
 
-void	ServerMonitor::addEventToPolfd(int fd, short event) {
+void	ServerMonitor::addEventToPollfd(int fd, short event) {
 	std::vector<pollfd>::iterator it = this->pollfdsVec_.begin();
 	std::vector<pollfd>::iterator ite = this->pollfdsVec_.end();
 
@@ -388,12 +396,23 @@ void	ServerMonitor::addEventToPolfd(int fd, short event) {
 	}
 }
 
-void	ServerMonitor::RemoveEventToPolfd(int fd, short event) {
+void	ServerMonitor::RemoveEventToPollfd(int fd, short event) {
 	std::vector<pollfd>::iterator it = this->pollfdsVec_.begin();
 	std::vector<pollfd>::iterator ite = this->pollfdsVec_.end();
 	for (; it != ite; it++) {
 		if (it->fd == fd) {
 			it->events &= ~event;
+			break;
+		}
+	}
+}
+
+void	ServerMonitor::setEventsToPollfd(int fd, short event) {
+	std::vector<pollfd>::iterator it = this->pollfdsVec_.begin();
+	std::vector<pollfd>::iterator ite = this->pollfdsVec_.end();
+	for (; it != ite; it++) {
+		if (it->fd == fd) {
+			it->events = event;
 			break;
 		}
 	}
@@ -410,7 +429,7 @@ void	ServerMonitor::checkTimeOut(void) {
 			Server *server = this->clientsMap_[clientFd];
 			Response *res = server->handleError(504);
 			this->responsesMap_[clientFd] = res;
-			this->addEventToPolfd(clientFd, POLLOUT);
+			this->setEventsToPollfd(clientFd, POLLOUT);
 			fdsToClose.push_back(cgiHandler->getPipeReadFd());
 			fdsToClose.push_back(cgiHandler->getPipeWriteFd());
 		}
@@ -430,4 +449,9 @@ void	ServerMonitor::checkTimeOut(void) {
 	for (size_t i = 0; i < fdsToClose.size(); i++) {
 		this->closeConnection(fdsToClose[i]);
 	}
+}
+
+void	ServerMonitor::switchLogs(void) {
+	this->logsOn_ = !this->logsOn_;
+	std::cout << "Switching logs " << (this->logsOn_ ? "on" : "off") << std::endl;
 }
