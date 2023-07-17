@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:44:51 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 12:23:57 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 15:32:31 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,7 +88,7 @@ int CgiHandler::getClientFd(void) const {
 	return this->clientFd_;
 }
 
-size_t CgiHandler::getStartTime(void) const {
+double CgiHandler::getStartTime(void) const {
 	return this->startTime_;
 }
 
@@ -100,7 +100,7 @@ void	CgiHandler::setClientFd(int fd) {
 	this->clientFd_ = fd;
 }
 
-void	CgiHandler::setStartTime(size_t time) {
+void	CgiHandler::setStartTime(double time) {
 	this->startTime_ = time;
 }
 

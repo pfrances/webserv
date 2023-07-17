@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 14:20:29 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 15:51:06 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -140,7 +140,7 @@ void	ServerMonitor::handleNewConnection(int fd) {
 	this->addNewPollfd(clientfd, POLLIN);
 	Server *server = this->serversMap_[fd];
 	this->clientsMap_.insert(std::pair<int, Server*>(clientfd, server));
-	server->setClientLastRequestTime(clientfd, this->timer_.getCurrentTime());
+	server->setClientLastRequestTime(clientfd, this->timer_.getElapsedTimeSince());
 }
 
 int	ServerMonitor::getPollfdsVecIndxFromFd(int fd) const {
@@ -172,13 +172,14 @@ void	ServerMonitor::handleClientRequest(int fd) {
 
 	Request *req = new Request(msg);
 	if (this->logsOn_) {
-		std::cout << "REQUEST:\t" << req->getStartLine() << "\t(" << req->getHostName() << ")" << std::endl;
+		this->timer_.printLogTime();
+		std::cout << " REQUEST:\t" << req->getStartLine() << "\t(" << req->getHostName() << ")" << std::endl;
 	}
 	Server *server = this->clientsMap_[fd];
 	Response *res = server->handleClientRequest(*req);
 	if (res->hasCgiHandler()) {
 		CgiHandler *cgi = res->getCgiHandler();
-		cgi->setStartTime(this->timer_.getCurrentTime());
+		cgi->setStartTime(this->timer_.getElapsedTimeSince());
 		int cgiReadFd = cgi->getPipeReadFd();
 		this->addNewPollfd(cgiReadFd, POLLIN);
 		if (req->getMethod() != "GET" && !req->getBody().empty()) {
@@ -195,7 +196,7 @@ void	ServerMonitor::handleClientRequest(int fd) {
 		this->setEventsToPollfd(fd, POLLOUT);
 	}
 	delete req;
-	server->setClientLastRequestTime(fd, this->timer_.getCurrentTime());
+	server->setClientLastRequestTime(fd, this->timer_.getElapsedTimeSince());
 }
 
 void	ServerMonitor::handleCgiResponse(pollfd const& pollfd) {
@@ -224,6 +225,7 @@ void	ServerMonitor::handleResponseToSend(int fd) {
 	Response *res = this->responsesMap_[fd];
 	if (res) {
 		if (this->logsOn_) {
+			this->timer_.printLogTime();
 			std::cout << "RESPONSE:\t" << res->getStartLine() << std::endl;
 		}
 		std::string const& msg = res->getRawMessage();

@@ -6,14 +6,14 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/07/13 19:28:38 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 11:30:04 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 15:28:15 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef TIMER_HPP
 # define TIMER_HPP
 
-#include <sys/time.h>
+#include <ctime>
 #include <stdio.h>
 
 class Timer {
@@ -24,11 +24,12 @@ class Timer {
 		~Timer(void);
 
 		void			startTimer(void);
-		size_t			getCurrentTime(void) const;
-		size_t			getElapsedTimeSince(size_t time) const;
+		double			getElapsedTimeSince(std::time_t time) const;
+		double			getElapsedTimeSince(void) const;
+		void			printLogTime(void) const;
 
 	private:
-		struct timeval		startTime_;
+		std::time_t	startTime_;
 };
 
 #endif

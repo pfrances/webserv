@@ -6,11 +6,12 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/07/13 19:33:37 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 11:29:56 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 16:01:08 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Timer.hpp"
+#include <iostream>
 
 Timer::Timer(void) : startTime_() {
 
@@ -31,25 +32,24 @@ Timer::~Timer(void) {
 
 }
 
-void	Timer::startTimer(void) {
-	gettimeofday(&this->startTime_, NULL);
+void Timer::startTimer() {
+	startTime_ = std::time(NULL);
 }
 
-size_t	Timer::getCurrentTime(void) const {
-	struct timeval	currentTime;
-	size_t			elapsedTime;
-
-	gettimeofday(&currentTime, NULL);
-	elapsedTime = (currentTime.tv_sec - this->startTime_.tv_sec) * 1000;
-	elapsedTime += (currentTime.tv_usec - this->startTime_.tv_usec) / 1000;
-	return (elapsedTime);
+double Timer::getElapsedTimeSince(std::time_t time) const {
+	std::time_t currentTime = std::time(NULL);
+	double elapsedTime = std::difftime(currentTime, time);
+	return elapsedTime;
 }
 
-size_t	Timer::getElapsedTimeSince(size_t time) const {
-	struct timeval	currentTime;
-	size_t			elapsedTime;
+double Timer::getElapsedTimeSince(void) const {
+	return getElapsedTimeSince(startTime_);
+}
 
-	gettimeofday(&currentTime, NULL);
-	elapsedTime = (currentTime.tv_sec) * 1000 + (currentTime.tv_usec) / 1000 - time;
-	return (elapsedTime);
+void Timer::printLogTime() const {
+	std::time_t currentTime = std::time(NULL);
+	std::string timeStr = std::asctime(std::localtime(&currentTime));
+	timeStr.erase(timeStr.end() - 1);
+	std::cout << "[" << timeStr << "] ";
+
 }

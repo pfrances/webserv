@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 15:00:29 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 14:12:20 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/17 15:54:59 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,11 +18,11 @@
 # endif
 
 # ifndef CLIENT_TIMEOUT
-#  define CLIENT_TIMEOUT 30000
+#  define CLIENT_TIMEOUT 30
 # endif
 
 # ifndef CGI_TIMEOUT
-#  define CGI_TIMEOUT 1000
+#  define CGI_TIMEOUT 1
 # endif
 
 # ifndef POLL_TIMEOUT
