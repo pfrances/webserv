@@ -1,6 +1,6 @@
 server {
 	listen 4242;
-	server_name default4242;
+	server_names default;
 
 	root webservPages;
 	error_page 404 webservPages/errorPages/404.html;
@@ -16,7 +16,7 @@ server {
 
 server {
 	listen 4242;
-	server_name server1;
+	server_names server1;
 
 	root webservPages;
 	error_page 404 webservPages/errorPages/404.html;
@@ -36,7 +36,7 @@ server {
 
 server {
 	listen 8080;
-	server_name server2;
+	server_names server2;
 
 	root webservPages;
 	client_body_size 1m;
@@ -61,7 +61,7 @@ server {
 
 server {
 	listen 8080;
-	server_name redirect;
+	server_names redirect;
 
 	return 301 http://server2:8080;
 }

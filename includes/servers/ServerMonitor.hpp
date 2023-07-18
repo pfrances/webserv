@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 15:00:29 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 16:23:50 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/18 11:43:22 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,11 +38,12 @@
 # include <map>
 # include <poll.h>
 # include <stdexcept>
-# include "Timer.hpp"
 
-class CgiHandler;
-class Response;
-class Server;
+# include "Timer.hpp"
+# include "Server.hpp"
+# include "CgiHandler.hpp"
+# include "Request.hpp"
+# include "Response.hpp"
 
 class ServerMonitor
 {

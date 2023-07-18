@@ -6,18 +6,16 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 17:16:57 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/18 13:22:52 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ServerMonitor.hpp"
 #include "ParseTools.hpp"
 #include "File.hpp"
-#include "Server.hpp"
-#include "Response.hpp"
-#include "Request.hpp"
 #include <iostream>
 #include <unistd.h>
+#include <cstdlib>
 
 ServerMonitor::ServerMonitor(std::string const& confFileName) :	serversMap_(),
 																clientsMap_(),
@@ -27,7 +25,14 @@ ServerMonitor::ServerMonitor(std::string const& confFileName) :	serversMap_(),
 																timer_(),
 																logsOn_(false) {
 	this->addNewPollfd(STDIN_FILENO, POLLIN);
-	this->parseConfigFile(confFileName);
+	try {
+		this->parseConfigFile(confFileName);
+	} catch (std::exception& e) {
+		for (std::map<int, Server*>::iterator it = serversMap_.begin(); it != serversMap_.end(); it++) {
+			delete it->second;
+		}
+		throw std::runtime_error(e.what());
+	}
 }
 
 ServerMonitor::ServerMonitor(ServerMonitor const& other) :	serversMap_(other.serversMap_),
@@ -87,22 +92,28 @@ void	ServerMonitor::parseConfigFile(std::string const& configFileName){
 
 	std::string::const_iterator	it = conf.begin();
 	std::string token = ParseTools::getNextToken(conf, it);
+	Server *server = NULL;
 	while (token.empty() == false)
 	{
 		if (token == "server") {
-			std::string serverBlock = ParseTools::extractBlock(conf, it);
-			Server *server = new Server(serverBlock);
-			std::map<int, Server*>::iterator it = this->serversMap_.begin();
-			std::map<int, Server*>::iterator ite = this->serversMap_.end();
-			for (; it != ite; it++) {
-				if (it->second->getPort() == server->getPort()) {
-					it->second->addSubServer(server);
-					break;
+			try {
+				std::string serverBlock = ParseTools::extractBlock(conf, it);
+				server = new Server(serverBlock);
+				std::map<int, Server*>::iterator it = this->serversMap_.begin();
+				std::map<int, Server*>::iterator ite = this->serversMap_.end();
+				for (; it != ite; it++) {
+					if (it->second->getPort() == server->getPort()) {
+						it->second->addSubServer(server);
+						break;
+					}
 				}
-			}
-			if (it == ite) {
-				server->prepareSocket();
-				this->serversMap_[server->getSocketFd()] = server;
+				if (it == ite) {
+					server->prepareSocket();
+					this->serversMap_[server->getSocketFd()] = server;
+				}
+			} catch (std::exception& e) {
+				delete server;
+				throw std::runtime_error(e.what());
 			}
 		}
 		else {
@@ -280,7 +291,6 @@ void	ServerMonitor::handleEvents(void) {
 
 void ServerMonitor::run() {
 	this->setServersStartListen();
-
 	while (1) {
 		int ret = poll(pollfdsVec_.data(), pollfdsVec_.size(), POLL_TIMEOUT);
 		if (ret < 0) {

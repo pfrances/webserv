@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 17:58:48 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/16 15:51:42 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/18 11:54:08 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -197,4 +197,21 @@ std::string ParseTools::parseBoundaryBody(std::string const& body, std::string c
 	std::string content = body.substr(start_index, end_index - start_index);
 
 	return content;
+}
+
+int	ParseTools::stringIpToInt(std::string const& ip) {
+	std::string::const_iterator it = ip.begin();
+	std::string::const_iterator ite = ip.end();
+	int result = 0;
+	int bit = 0;
+	for (; it != ite; it++) {
+		if (*it == '.') {
+			result = (result << 8) | bit;
+			bit = 0;
+		} else {
+			bit = bit * 10 + (*it - '0');
+		}
+	}
+	result = (result << 8) | bit;
+	return result;
 }

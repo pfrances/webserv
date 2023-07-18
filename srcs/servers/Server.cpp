@@ -22,7 +22,7 @@
 #include <cstdlib>
 #include <iostream>
 
-Server::Server(std::string const& serverConf) :	serverName_("default"),
+Server::Server(std::string const& serverConf) :	serverNamesVec_(),
 												host_("127.0.0.1"),
 												port_(8080),
 												sockaddr_(),
@@ -30,10 +30,18 @@ Server::Server(std::string const& serverConf) :	serverName_("default"),
 												locationsMap_(),
 												subServMap_(),
 												clientLastRequestTimeMap_() {
-	this->parseServerConf(serverConf);
+	try {
+		this->parseServerConf(serverConf);
+	} catch (std::exception &e) {
+		for (std::map<std::string, Location*>::iterator it = this->locationsMap_.begin();
+				it != this->locationsMap_.end(); it++) {
+			delete it->second;
+		}
+		throw std::runtime_error(e.what());
+	}
 }
 
-Server::Server(Server const& other) :	serverName_(other.serverName_),
+Server::Server(Server const& other) :	serverNamesVec_(other.serverNamesVec_),
 										host_(other.host_),
 										port_(other.port_),
 										sockaddr_(other.sockaddr_),
@@ -46,7 +54,7 @@ Server::Server(Server const& other) :	serverName_(other.serverName_),
 
 Server &Server::operator=(Server const& other) {
 	if (this != &other) {
-		this->serverName_ = other.serverName_;
+		this->serverNamesVec_ = other.serverNamesVec_;
 		this->host_ = other.host_;
 		this->port_ = other.port_;
 		this->sockaddr_ = other.sockaddr_;
@@ -58,23 +66,24 @@ Server &Server::operator=(Server const& other) {
 }
 
 Server::~Server(void) {
+	std::map<std::string, Server*>::iterator itSubServ = this->subServMap_.begin();
+	std::map<std::string, Server*>::iterator iteSubServ = this->subServMap_.end();
+	for (; itSubServ != iteSubServ; itSubServ++) {
+			delete itSubServ->second;
+			itSubServ->second = NULL;
+	}
+
 	std::map<std::string, Location*>::iterator itLoc = this->locationsMap_.begin();
 	std::map<std::string, Location*>::iterator iteLoc = this->locationsMap_.end();
 	for (; itLoc != iteLoc; itLoc++) {
 		delete itLoc->second;
-	}
-
-	std::map<std::string, Server*>::iterator itSubServ = this->subServMap_.begin();
-	std::map<std::string, Server*>::iterator iteSubServ = this->subServMap_.end();
-	for (; itSubServ != iteSubServ; itSubServ++) {
-		delete itSubServ->second;
 	}
 }
 
 void	Server::prepareSocket(void) {
 	this->sockaddr_.sin_family = AF_INET;
 	this->sockaddr_.sin_port = htons(port_);
-	this->sockaddr_.sin_addr.s_addr = htonl(stringIpToInt(host_));
+	this->sockaddr_.sin_addr.s_addr = htonl(ParseTools::stringIpToInt(host_));
 
 	this->socketFd_ = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->socketFd_ < 0)
@@ -91,21 +100,31 @@ void	Server::prepareSocket(void) {
 }
 
 void	Server::addSubServer(Server *subServ) {
-	std::string const& hostName = subServ->getServerName();
+	std::vector<std::string>::const_iterator it = subServ->getServerNamesVec().begin();
+	std::vector<std::string>::const_iterator ite = subServ->getServerNamesVec().end();
 
-	if (hostName == this->serverName_ || this->subServMap_.find(hostName) != this->subServMap_.end()) {
-		throw ConfigurationException("The Hostname '" + hostName + "' has been used twice for the same host:port.");
+	for (; it != ite; it++) {
+		std::string const& hostName = *it;
+		if (this->subServMap_.find(hostName) != this->subServMap_.end()) {
+			throw ConfigurationException("The Hostname '" + hostName + "' has been used twice for the same host:port.");
+		}
+		std::vector<std::string>::iterator it2 = this->serverNamesVec_.begin();
+		std::vector<std::string>::iterator ite2 = this->serverNamesVec_.end();
+		for (; it2 != ite2; it2++) {
+			if (*it2 == hostName) {
+				throw ConfigurationException("The Hostname '" + hostName + "' has been used twice for the same host:port.");
+			}
+		}
+		this->subServMap_[hostName] = subServ;
 	}
-
-	this->subServMap_[hostName] = subServ;
 }
 
 std::map<std::string, Location*> const&	Server::getLocationsMap(void) const {
 	return (this->locationsMap_);
 }
 
-std::string const& Server::getServerName(void) const {
-	return (this->serverName_);
+std::vector<std::string> const& Server::getServerNamesVec(void) const {
+	return (this->serverNamesVec_);
 }
 
 std::string const& Server::getHost(void) const {
@@ -163,7 +182,7 @@ void	Server::startListen(int backlog) {
 void	Server::parseServerConf(std::string const& serverConf) {
 	std::string::const_iterator	it = serverConf.begin();
 
-	Location *defaultLocation = new Location();
+	Location defaultLocation;
 	std::vector<std::string> tokensVec;
 	std::string token = ParseTools::getNextToken(serverConf, it);
 	while (token.empty() == false) {
@@ -173,47 +192,44 @@ void	Server::parseServerConf(std::string const& serverConf) {
 			if (ParseTools::getNextToken(serverConf, it) != ";") {
 				throw ConfigurationException("[Configuration Server] listen: no semicolon.");
 			}
-		} else if (token == "server_name") {
-			token = ParseTools::getNextToken(serverConf, it);
-			this->serverName_ = token;
-			if (ParseTools::getNextToken(serverConf, it) != ";") {
-				throw ConfigurationException("[Configuration Server] server_name: no semicolon.");
-			}
+		} else if (token == "server_names") {
+			tokensVec = ParseTools::getAllTokensUntilSemicolon(serverConf, it);
+			this->serverNamesVec_ = tokensVec;
 		} else if (token == "error_page") {
 			tokensVec = ParseTools::getAllTokensUntilSemicolon(serverConf, it);
-			defaultLocation->parseAndAddErrorPages(tokensVec);
+			defaultLocation.parseAndAddErrorPages(tokensVec);
 		} else if (token == "location") {
 			token = ParseTools::getNextToken(serverConf, it);
 			std::string locationBlock = ParseTools::extractBlock(serverConf, it);
 			this->addLocation(new Location(locationBlock, token));
 		} else if (token == "client_body_size") {
 			token = ParseTools::getNextToken(serverConf, it);
-			defaultLocation->setClientMaxBodySize(token);
+			defaultLocation.setClientMaxBodySize(token);
 			if (ParseTools::getNextToken(serverConf, it) != ";") {
 				throw ConfigurationException("[Configuration Server] client_body_size: no semicolon.");
 			}
 		} else if (token == "index") {
 			tokensVec = ParseTools::getAllTokensUntilSemicolon(serverConf, it);
-			defaultLocation->setIndex(tokensVec);
+			defaultLocation.setIndex(tokensVec);
 		} else if (token == "return") {
 			tokensVec = ParseTools::getAllTokensUntilSemicolon(serverConf, it);
 			if (tokensVec.size() != 2) {
-				throw ConfigurationException("Server [" + this->serverName_ + "]: return: invalid number of arguments.");
+				throw ConfigurationException("[Configuration Server]: return: invalid number of arguments.");
 			}
-			defaultLocation->setRedirectStatusCode(ParseTools::stringToInt(tokensVec[0]));
-			defaultLocation->setRedirectUri(tokensVec[1]);
+			defaultLocation.setRedirectStatusCode(ParseTools::stringToInt(tokensVec[0]));
+			defaultLocation.setRedirectUri(tokensVec[1]);
 		} else if (token == "root") {
 			token = ParseTools::getNextToken(serverConf, it);
-			defaultLocation->setRoot(token);
+			defaultLocation.setRoot(token);
 			if (ParseTools::getNextToken(serverConf, it) != ";") {
 				throw ConfigurationException("[Configuration Server] root: no semicolon.");
 			}
 		} else if (token == "autoindex") {
 				token = ParseTools::getNextToken(serverConf, it);
 			if (token == "on") {
-				defaultLocation->setAutoIndex(true);
+				defaultLocation.setAutoIndex(true);
 			} else if (token == "off") {
-				defaultLocation->setAutoIndex(false);
+				defaultLocation.setAutoIndex(false);
 			} else {
 				throw ConfigurationException("[Configuration Server] autoindex: invalid argument.");
 			}
@@ -230,12 +246,10 @@ void	Server::parseServerConf(std::string const& serverConf) {
 	std::map<std::string, Location*>::iterator iteLoc = this->locationsMap_.end();
 	for (; itLoc != iteLoc; itLoc++) {
 		Location* location = itLoc->second;
-		location->applyDefaultValues(*defaultLocation);
+		location->applyDefaultValues(defaultLocation);
 	}
 	if (this->locationsMap_.find("/") == iteLoc) {
-		this->addLocation(defaultLocation);
-	} else {
-		delete defaultLocation;
+		this->addLocation(new Location(defaultLocation));
 	}
 }
 
@@ -584,21 +598,4 @@ Location*	Server::getCorrespondingLocation(Request const& req) {
 	} else {
 		return findLocation(this->getLocationsMap(), req.getUri());
 	}
-}
-
-int	stringIpToInt(std::string const& ip) {
-	std::string::const_iterator it = ip.begin();
-	std::string::const_iterator ite = ip.end();
-	int result = 0;
-	int bit = 0;
-	for (; it != ite; it++) {
-		if (*it == '.') {
-			result = (result << 8) | bit;
-			bit = 0;
-		} else {
-			bit = bit * 10 + (*it - '0');
-		}
-	}
-	result = (result << 8) | bit;
-	return result;
 }
