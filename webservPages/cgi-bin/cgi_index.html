@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Webserver - CGI </title>
+	<link rel="shortcut icon" href="http://www.default.com:4242/42.png" type="image/x-icon">
+</head>
+
+<body>
+	<h1>Webserver CGI Page</h1>
+	<ul>
+		<li>
+			<p><a href="bash_cgi">Bash Cgi</a></p>
+		</li>
+		<li>
+			<p><a href="cpp_cgi">Cpp Cgi</a></p>
+		</li>
+		<li>
+			<p><a href="timeout">Timeout Cpp Cgi</a></p>
+		</li>
+	</ul>
+	<h2>Formulaire Cgi POST</h2>
+	<form action="/python_cgi" method="POST" id="my-form">
+		<label for="first-name">First name :</label>
+		<input type="text" id="first-name" name="firstname" required><br>
+
+		<label for="last-name">Last name :</label>
+		<input type="text" id="last-name" name="lastname" required><br>
+
+		<div id="additional-fields"></div>
+
+		<button type="button" onclick="addNewField()">Add Field</button>
+		<p>
+			<button type="button" onclick="prepareFormData('GET')">Send GET Request</button>
+			<button type="button" onclick="prepareFormData('POST')">Send POST Request</button>
+		</p>
+	</form>
+
+	<script>
+		function addNewField() {
+			var container = document.getElementById("additional-fields");
+
+			var keyInput = document.createElement("input");
+			keyInput.type = "text";
+			keyInput.name = "additional-field-key[]";
+			keyInput.placeholder = "Key";
+			keyInput.required = true;
+
+			var valueInput = document.createElement("input");
+			valueInput.type = "text";
+			valueInput.name = "additional-field-value[]";
+			valueInput.placeholder = "Value";
+			valueInput.required = true;
+			var lineBreak = document.createElement("br");
+			var label = document.createElement("label");
+			label.appendChild(keyInput);
+			label.appendChild(valueInput);
+
+			var deleteButton = document.createElement("button");
+			deleteButton.type = "button";
+			deleteButton.textContent = "Delete";
+			deleteButton.addEventListener("click", function() {
+				container.removeChild(label);
+				container.removeChild(deleteButton);
+				container.removeChild(lineBreak);
+			});
+
+			container.appendChild(label);
+			container.appendChild(deleteButton);
+			container.appendChild(lineBreak);
+		}
+
+		function prepareFormData(method) {
+			var form = document.getElementById("my-form");
+			var formData = new FormData(form);
+			var newForm = document.createElement("form");
+			var data = [];
+			var key = "";
+			var value = "";
+
+			for (var pair of formData.entries()) {
+				if (pair[0] === "additional-field-key[]") {
+					key = pair[1];
+				} else if (pair[0] === "additional-field-value[]") {
+					value = pair[1];
+				} else {
+					key = pair[0];
+					value = pair[1];
+				}
+				if (key !== "" && value !== "") {
+					data.push(encodeURIComponent(key) + '=' + encodeURIComponent(value));
+					var newInput = document.createElement("input");
+					newInput.type = "hidden";
+					newInput.name = key
+					newInput.value = value;
+					newForm.appendChild(newInput);
+					key = "";
+					value = "";
+				}
+			}
+
+			var formattedData = data.join('&');
+
+			if (method === 'GET') {
+				var url = '/python_cgi?' + formattedData;
+				window.location.href = url;
+			} else if (method === 'POST') {
+
+				newForm.action = '/python_cgi';
+				newForm.method = 'POST';
+
+				document.body.appendChild(newForm);
+			}
+			newForm.submit();
+		}
+	</script>
+	<a href="http://www.default.com:4242">Back to default server</a>
+</body>
+
+</html>

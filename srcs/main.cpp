@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 14:42:05 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/13 13:13:45 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/18 15:43:18 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,6 +40,5 @@ int	main(int argc, char **argv)
 		std::cerr << e.what() << std::endl;
 		return 1;
 	}
-
 	return 0;
 }

@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>UPLOAD</title>
+	<title>Webserver - UPLOAD </title>
+	<link rel="shortcut icon" href="http://www.default.com:4242/42.png" type="image/x-icon">
 	<script>
 		function sendDeleteRequest() {
 			var key = document.getElementById('delete-key').value;
@@ -24,9 +25,9 @@
 	</script>
 </head>
 <body>
-	<h1>Upload</h1>
+	<h1>Webserver Upload page</h1>
 
-	<h2>POST Request</h2>
+	<h2>POST Request - [add key to log file] </h2>
 	<form action="/post/upload.log" method="POST">
 		<label for="post-key">Key :</label>
 		<input type="text" id="post-key" name="key" required><br>
@@ -37,14 +38,14 @@
 		<button type="submit">Set key</button>
 	</form>
 
-	<h2>DELETE Request</h2>
+	<h2>DELETE Request - [remove key from log file]</h2>
 	<form>
 		<label for="delete-key">Key :</label>
 		<input type="text" id="delete-key" required>
 		<button type="button" onclick="sendDeleteRequest()">Delete</button>
 	</form>
 
-	<h2>Upload file</h2>
+	<h2>Upload file to Webserver</h2>
 	<form id="uploadForm" enctype="multipart/form-data">
 		<input type="file" name="fileToUpload" id="fileToUpload">
 		<button type="submit" id="uploadButton">Upload</button>
@@ -79,5 +80,7 @@
 			xhr.send(formData);
 		});
 	</script>
+	<br>
+	<a href="http://www.default.com:4242">Back to default server</a>
 </body>
 </html>

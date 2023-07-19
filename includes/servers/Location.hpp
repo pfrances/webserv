@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 14:20:33 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/13 15:33:19 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/18 14:45:37 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,7 +79,7 @@ public:
 
 
 private:
-	void parseLocationConf(std::string const& locationConfig);
+	void		parseLocationConf(std::string const& locationConfig);
 
 	std::string							path_;
 	std::string							root_;

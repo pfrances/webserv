@@ -21,6 +21,7 @@
 #include <limits>
 #include <cstdlib>
 #include <iostream>
+#include <set>
 
 Server::Server(std::string const& serverConf) :	serverNamesVec_(),
 												host_("127.0.0.1"),
@@ -31,11 +32,13 @@ Server::Server(std::string const& serverConf) :	serverNamesVec_(),
 												subServMap_(),
 												clientLastRequestTimeMap_() {
 	try {
+		serverNamesVec_.push_back("");
 		this->parseServerConf(serverConf);
 	} catch (std::exception &e) {
 		for (std::map<std::string, Location*>::iterator it = this->locationsMap_.begin();
 				it != this->locationsMap_.end(); it++) {
 			delete it->second;
+			it->second = NULL;
 		}
 		throw std::runtime_error(e.what());
 	}
@@ -66,17 +69,22 @@ Server &Server::operator=(Server const& other) {
 }
 
 Server::~Server(void) {
-	std::map<std::string, Server*>::iterator itSubServ = this->subServMap_.begin();
-	std::map<std::string, Server*>::iterator iteSubServ = this->subServMap_.end();
-	for (; itSubServ != iteSubServ; itSubServ++) {
-			delete itSubServ->second;
-			itSubServ->second = NULL;
-	}
-
 	std::map<std::string, Location*>::iterator itLoc = this->locationsMap_.begin();
 	std::map<std::string, Location*>::iterator iteLoc = this->locationsMap_.end();
 	for (; itLoc != iteLoc; itLoc++) {
 		delete itLoc->second;
+		itLoc->second = NULL;
+	}
+
+	std::map<std::string, Server*>::iterator itSubServ = this->subServMap_.begin();
+	std::map<std::string, Server*>::iterator iteSubServ = this->subServMap_.end();
+	std::set<Server*> alreadyDeleted;
+	for (; itSubServ != iteSubServ; itSubServ++) {
+		if (alreadyDeleted.find(itSubServ->second) == alreadyDeleted.end()) {
+			delete itSubServ->second;
+			alreadyDeleted.insert(itSubServ->second);
+		}
+		itSubServ->second = NULL;
 	}
 }
 
@@ -201,7 +209,14 @@ void	Server::parseServerConf(std::string const& serverConf) {
 		} else if (token == "location") {
 			token = ParseTools::getNextToken(serverConf, it);
 			std::string locationBlock = ParseTools::extractBlock(serverConf, it);
-			this->addLocation(new Location(locationBlock, token));
+			Location *loc = NULL;
+			try {
+				loc = new Location(locationBlock, token);
+				this->addLocation(loc);
+			} catch (std::exception& e) {
+				delete loc;
+				throw std::runtime_error(e.what());
+			}
 		} else if (token == "client_body_size") {
 			token = ParseTools::getNextToken(serverConf, it);
 			defaultLocation.setClientMaxBodySize(token);
@@ -300,17 +315,23 @@ Response*	Server::handleIndexing(File const& file, Request const& req, Location 
 	File index;
 	for (; it != ite; it++) {
 		index = File(file.getFullPath() + "/" + *it);
-		if (location->isCgiLocation() && index.exists()) {
-			Response *res = new Response();
-			res->setCgiHandler(index.getFullPath(), location->getCgiExecutorByExtension(index.getExtension()), req);
-			return res;
-		} else if (index.isReadable()) {
-			std::string const& indexContent = index.getFileContent();
-			Response *res = new Response();
-			res->setStatusCode(200);
-			res->setMimeByExtension(index.getExtension());
-			res->setBody(indexContent);
-			return res;
+		Response *res = NULL;
+		try {
+			if (location->isCgiLocation() && index.isExecutable()) {
+				Response *res = new Response();
+				res->setCgiHandler(index.getFullPath(), location->getCgiExecutorByExtension(index.getExtension()), req);
+				return res;
+			} else if (index.isReadable()) {
+				std::string const& indexContent = index.getFileContent();
+				Response *res = new Response();
+				res->setStatusCode(200);
+				res->setMimeByExtension(index.getExtension());
+				res->setBody(indexContent);
+				return res;
+			}
+		} catch (std::exception& e) {
+			delete res;
+			return handleError(500, location);
 		}
 	}
 
@@ -523,9 +544,15 @@ Response*	Server::handleCgiRequest(Request const& req, Location *location) const
 	for (; it != ite; it++) {
 		File cgi(path + *it);
 		if (cgi.exists() == true) {
-			Response *res = new Response();
-			res->setCgiHandler(cgi.getFullPath(), location->getCgiExecutorByExtension(*it), req);
-			return res;
+			Response *res = NULL;
+			try {
+				res = new Response();
+				res->setCgiHandler(cgi.getFullPath(), location->getCgiExecutorByExtension(*it), req);
+				return res;
+			} catch (std::exception& e) {
+				delete res;
+				return handleError(500, location);
+			}
 		}
 	}
 	return handleError(404, location);
@@ -584,10 +611,7 @@ Location*	Server::findLocation(std::map<std::string, Location*> const& locMap, s
 		}
 		tmp = tmp.substr(0, pos);
 	}
-	if (locMap.find("/") != locMap.end()) {
-		return locMap.find("/")->second;
-	}
-	return NULL;
+	return locMap.find("/")->second;
 }
 
 Location*	Server::getCorrespondingLocation(Request const& req) {

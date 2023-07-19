@@ -1,33 +1,41 @@
 server {
 	listen 4242;
-	server_names default;
+	server_names default default.com www.default.com;
 
 	root webservPages;
 	error_page 404 webservPages/errorPages/404.html;
 
 	location / {
-		autoindex on;
+		index default_index.html;
 	}
 
 	location /upload {
-		return 301 http://server2:8080/upload;
+		return 301 http://www.upload.com:8080;
+	}
+
+	location /cgi-bin {
+		return 301 http://www.cgi.com:4242;
+	}
+
+	location /auto_index {
+		return 301 http://www.auto_index.com:1234;
+	}
+
+	location /redirect {
+		return 301 http://www.redirect.com:1234;
 	}
 }
 
 server {
 	listen 4242;
-	server_names server1;
+	server_names cgi-serv cgi-serv.com www.cgi-serv.com;
 
-	root webservPages;
+	root webservPages/cgi-bin;
 	error_page 404 webservPages/errorPages/404.html;
 
 	location / {
-		index cgiIndex.html;
-	}
-
-	location /cgi-bin {
 		allow_methods GET POST;
-		index cgi.sh;
+		index cgi_index.html;
 
 		cgi_executor /bin/bash /usr/bin/python3;
 		cgi_ext .sh .py;
@@ -36,32 +44,45 @@ server {
 
 server {
 	listen 8080;
-	server_names server2;
+	server_names upload upload.com www.upload.com;
 
-	root webservPages;
+	error_page 404 webservPages/errorPages/404.html;
+
+	root webservPages/upload;
 	client_body_size 1m;
-	index index2.html;
 
-	location /upload {
-		index upload.html;
+	location / {
+		index upload_index.html;
 	}
 
 	location /post {
 		allow_methods POST;
 		upload_path webservPages/upload;
-		return 303 /upload/$;
+		return 303 /$;
 	}
 
 	location /delete {
 		allow_methods DELETE;
 		upload_path webservPages/upload;
-		return 303 /upload/$;
+		return 303 /$;
 	}
 }
 
 server {
 	listen 8080;
-	server_names redirect;
+	server_names redirect redirect.com www.redirect.com;
 
-	return 301 http://server2:8080;
+	return 301 http://www.default.com:4242;
+}
+
+server {
+	listen 1234;
+	server_names auto_index auto_index.com www.auto_index.com;
+
+	error_page 404 webservPages/errorPages/404.html;
+	root webservPages;
+
+	location / {
+		auto_index on;
+	}
 }

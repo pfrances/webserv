@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:23:49 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/15 19:03:52 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/19 10:34:07 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -233,7 +233,7 @@ void Location::parseAndAddErrorPages(std::vector<std::string> const& errorPages)
 }
 
 void Location::setRedirectUri(std::string const& uri) {
-	if (uri.empty() || (uri.at(0) != '/' && uri.find("http://") != 0)) {
+	if (uri.empty() || (uri.at(0) != '/' && uri.find("http://") != 0 && uri.find("https://") != 0)) {
 		throw ConfigurationException("[Configuration Location] " + this->getPath() + ": invalid redirection path");
 	}
 	this->redirectUri_ = uri;
@@ -385,7 +385,7 @@ void Location::parseLocationConf(std::string const& locationBlock) {
 			if (ParseTools::getNextToken(locationBlock, it) != ";") {
 				throw ConfigurationException("Location [" + this->path_ + "]: upload_path: no semicolon.");
 			}
-		} else if (token == "autoindex") {
+		} else if (token == "auto_index") {
 			token = ParseTools::getNextToken(locationBlock, it);
 			if (token == "on") {
 				this->setAutoIndex(true);

@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 17:53:49 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/18 11:53:27 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/19 11:51:54 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,7 @@ class ParseTools {
 		static int						hexaStrToInt(std::string const& hexa);
 		static std::string				parseBoundaryBody(std::string const& body,
 											std::string const& boundary);
+		static std::string				parseUrlEncodedBody(std::string const& body);
 };
 
 class ConfigurationException : public std::runtime_error {

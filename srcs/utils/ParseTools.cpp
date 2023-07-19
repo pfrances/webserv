@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 17:58:48 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/18 11:54:08 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/19 11:54:28 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -197,6 +197,33 @@ std::string ParseTools::parseBoundaryBody(std::string const& body, std::string c
 	std::string content = body.substr(start_index, end_index - start_index);
 
 	return content;
+}
+
+std::string	ParseTools::parseUrlEncodedBody(std::string const& body) {
+	std::string::const_iterator it = body.begin();
+	std::string::const_iterator ite = body.end();
+
+	std::string decodedStr;
+	std::string hexStr;
+	decodedStr.reserve(body.length());
+	for (; it != ite; it++) {
+		if (*it == '+') {
+			decodedStr += ' ';
+		} else if (*it == '%') {
+			if (it + 2 >= ite) {
+				hexStr = std::string(it + 1, ite);
+				it = ite;
+			} else {
+				hexStr = std::string(it + 1, it + 3);
+				it += 2;
+			}
+			int hex = hexaStrToInt(hexStr);
+			decodedStr += static_cast<char>(hex);
+		} else {
+			decodedStr += *it;
+		}
+	}
+	return decodedStr;
 }
 
 int	ParseTools::stringIpToInt(std::string const& ip) {

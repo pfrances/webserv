@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/18 13:22:52 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/19 11:55:01 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,7 @@ ServerMonitor::ServerMonitor(std::string const& confFileName) :	serversMap_(),
 	} catch (std::exception& e) {
 		for (std::map<int, Server*>::iterator it = serversMap_.begin(); it != serversMap_.end(); it++) {
 			delete it->second;
+			it->second = NULL;
 		}
 		throw std::runtime_error(e.what());
 	}
@@ -71,18 +72,21 @@ ServerMonitor::~ServerMonitor(void) {
 	std::map<int, Server*>::iterator iteServ = serversMap_.end();
 	for (; itServ != iteServ; itServ++) {
 		delete itServ->second;
+		itServ->second = NULL;
 	}
 
 	std::map<int, Response*>::iterator itRes = responsesMap_.begin();
 	std::map<int, Response*>::iterator iteRes = responsesMap_.end();
 	for(; itRes != iteRes; itRes++) {
 		delete itRes->second;
+		itRes->second = NULL;
 	}
 
 	std::map<int, CgiHandler*>::iterator itCgi = cgiHandlersMap_.begin();
 	std::map<int, CgiHandler*>::iterator iteCgi = cgiHandlersMap_.end();
 	for(; itCgi != iteCgi; itCgi++) {
 		delete itCgi->second;
+		itCgi->second = NULL;
 	}
 }
 
@@ -92,28 +96,28 @@ void	ServerMonitor::parseConfigFile(std::string const& configFileName){
 
 	std::string::const_iterator	it = conf.begin();
 	std::string token = ParseTools::getNextToken(conf, it);
-	Server *server = NULL;
 	while (token.empty() == false)
 	{
 		if (token == "server") {
+			Server *server = NULL;
+			std::string serverBlock = ParseTools::extractBlock(conf, it);
 			try {
-				std::string serverBlock = ParseTools::extractBlock(conf, it);
 				server = new Server(serverBlock);
-				std::map<int, Server*>::iterator it = this->serversMap_.begin();
-				std::map<int, Server*>::iterator ite = this->serversMap_.end();
-				for (; it != ite; it++) {
-					if (it->second->getPort() == server->getPort()) {
-						it->second->addSubServer(server);
-						break;
-					}
-				}
-				if (it == ite) {
-					server->prepareSocket();
-					this->serversMap_[server->getSocketFd()] = server;
-				}
 			} catch (std::exception& e) {
 				delete server;
 				throw std::runtime_error(e.what());
+			}
+			std::map<int, Server*>::iterator it = this->serversMap_.begin();
+			std::map<int, Server*>::iterator ite = this->serversMap_.end();
+			for (; it != ite; it++) {
+				if (it->second->getPort() == server->getPort()) {
+					it->second->addSubServer(server);
+					break;
+				}
+			}
+			if (it == ite) {
+				server->prepareSocket();
+				this->serversMap_[server->getSocketFd()] = server;
 			}
 		}
 		else {

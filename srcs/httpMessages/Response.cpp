@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:21 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 18:14:11 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/18 16:06:07 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -185,7 +185,13 @@ void	Response::setCgiHandler(std::string const& path, std::string const& cgiExec
 	}
 	this->cgiHandler_ = new CgiHandler(path, cgiExecutor);
 	this->cgiHandler_->setEnv(request);
-	this->cgiHandler_->executeCgi();
+	try {
+		this->cgiHandler_->executeCgi();
+	} catch (std::exception& e) {
+		delete this->cgiHandler_;
+		this->cgiHandler_ = NULL;
+		throw std::runtime_error("CGI execution failed");
+	}
 }
 
 void	Response::parseStartLine(void) {

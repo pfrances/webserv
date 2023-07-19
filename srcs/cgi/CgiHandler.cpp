@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:44:51 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 18:22:07 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/19 11:50:38 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,7 +58,7 @@ CgiHandler::~CgiHandler(void) {
 	if (this->pipe_[1] != -1) {
 		close(this->pipe_[1]);
 	}
-	if (this->pid_ != -1) {
+	if (this->pid_ > 0) {
 		kill(this->pid_, SIGKILL);
 		waitpid(this->pid_, NULL, 0);
 	}
@@ -119,6 +119,8 @@ void	CgiHandler::setEnv(Request const& req) {
 	std::string const& body = req.getBody();
 	if (!req.getBoundary().empty()) {
 		this->body_ = ParseTools::parseBoundaryBody(body, req.getBoundary());
+	} else if (req.getSingleHeader("Content-Type").find("application/x-www-form-urlencoded") != std::string::npos) {
+		this->body_ = ParseTools::parseUrlEncodedBody(body);
 	} else {
 		this->body_ = body;
 	}
@@ -157,7 +159,7 @@ void CgiHandler::executeCgi(void) {
 		if (execve(args[0], args, env) < 0) {
 			delete[] args;
 			delete[] env;
-			throw std::runtime_error(args[0] + std::string(": execve error"));
+			throw std::runtime_error("execve error");
 		}
 	}
 	if (this->body_.empty()) {
