@@ -6,7 +6,7 @@
 #    By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/02/26 11:07:21 by pfrances          #+#    #+#              #
-#    Updated: 2023/07/18 16:43:54 by pfrances         ###   ########.fr        #
+#    Updated: 2023/07/19 13:12:12 by pfrances         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -45,7 +45,15 @@ SRCS =	$(SRCS_DIR)/main.cpp				\
 
 OBJS = $(subst $(SRCS_DIR), $(OBJS_DIR), $(SRCS:.cpp=.o))
 
-all: $(NAME)
+CGI-BIN_DIR = webservPages/cgi-bin
+CGI_SRCS_DIR = cgi_srcs
+CPP_CGI = $(CGI-BIN_DIR)/cpp_cgi
+CPP_CGI_SRC = $(CGI_SRCS_DIR)/cpp_cgi.cpp
+TIMEOUT_CPP_CGI = $(CGI-BIN_DIR)/timeout_cpp_cgi
+TIMEOUT_CPP_CGI_SRC = $(CGI_SRCS_DIR)/timeout_cpp_cgi.cpp
+CGIFLAGS = -Wall -Wextra -Werror -std=c++98 -pedantic
+
+all: $(NAME) cgi
 
 $(NAME): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) $^ -o $@
@@ -54,10 +62,23 @@ $(OBJS_DIR)/%.o: $(SRCS_DIR)/%.cpp
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) -c $< -o $@
 
+$(CPP_CGI): $(CPP_CGI_SRC)
+	@mkdir -p $(@D)
+	$(CXX) $(CGIFLAGS) $^ -o $@
+
+$(TIMEOUT_CPP_CGI): $(TIMEOUT_CPP_CGI_SRC)
+	@mkdir -p $(@D)
+	$(CXX) $(CGIFLAGS) $^ -o $@
+
+cgi: $(CPP_CGI) $(TIMEOUT_CPP_CGI)
+
+fclean-cgi:
+	rm -f $(CPP_CGI) $(TIMEOUT_CPP_CGI)
+
 clean:
 	rm -rf $(OBJS_DIR)
 
-fclean: clean
+fclean: fclean-cgi clean
 	rm -f $(NAME)
 
 re: fclean all
@@ -70,6 +91,6 @@ debug: re
 valgrind: all
 	valgrind --leak-check=full ./$(NAME) confs/config.txt
 
-.PHONY: all clean fclean re debug valgrind
+.PHONY: all clean fclean cgi fclean-cgi re debug valgrind
 
 -include $(DEPS)
