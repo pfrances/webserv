@@ -591,6 +591,10 @@ Response*	Server::handleClientRequest(Request const& req) {
 	Location *location = getCorrespondingLocation(req);
 	std::string const& method = req.getMethod();
 
+	if (req.isFetched() == false) {
+		return this->handleError(422, location);
+	}
+
 	if (method == "GET") {
 		return this->handleGetRequest(req, location);
 	} else if (method == "POST") {
@@ -598,7 +602,7 @@ Response*	Server::handleClientRequest(Request const& req) {
 	} else if (method == "DELETE") {
 		return this->handleDeleteRequest(req, location);
 	}
-	return this->handleError(501, this->locationsMap_.find("/")->second);
+	return this->handleError(501, location);
 }
 
 Location*	Server::findLocation(std::map<std::string, Location*> const& locMap, std::string const& uri) {
