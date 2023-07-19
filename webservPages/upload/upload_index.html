@@ -57,7 +57,7 @@
 			var fileInput = document.getElementById('fileToUpload');
 			var file = fileInput.files[0];
 
-			var filename = file.name;
+			var filename = encodeURIComponent(file.name);
 
 			var endpoint = "/post/" + filename;
 

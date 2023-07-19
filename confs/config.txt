@@ -49,7 +49,7 @@ server {
 	error_page 404 webservPages/errorPages/404.html;
 
 	root webservPages/upload;
-	client_body_size 1m;
+	client_body_size 10k;
 
 	location / {
 		index upload_index.html;

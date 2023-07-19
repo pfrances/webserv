@@ -439,7 +439,11 @@ Response*	Server::handleUploadPostRequest(Request const& req, Location *location
 		file = File(filePath);
 	}
 	try {
-		file.setFileContent(ParseTools::parseBoundaryBody(body, req.getBoundary()));
+		if (req.getBoundary().empty())
+			file.setFileContent(body);
+		else {
+			file.setFileContent(ParseTools::parseBoundaryBody(body, req.getBoundary()));
+		}
 	} catch (OpeningFailed& e) {
 		return handleError(500, location);
 	} catch (ConversionException& e) {
@@ -482,7 +486,7 @@ Response*	Server::handlePostRequest(Request const& req, Location *location) cons
 	std::string const& contentType = req.getSingleHeader("Content-Type");
 	if (contentType == "application/x-www-form-urlencoded") {
 		return this->handleLogPostRequest(req, location);
-	} else if (contentType.find("multipart/form-data") != std::string::npos)  {
+	} else if (contentType.find("multipart/form-data") == 0 || contentType.find("text/") == 0) {
 		return this->handleUploadPostRequest(req, location);
 	}
 	return handleError(415, location);
