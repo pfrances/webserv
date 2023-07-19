@@ -6,13 +6,13 @@
 #    By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/02/26 11:07:21 by pfrances          #+#    #+#              #
-#    Updated: 2023/07/19 14:22:56 by pfrances         ###   ########.fr        #
+#    Updated: 2023/07/19 17:22:50 by pfrances         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 NAME = webserv
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -g -std=c++98 -pedantic -MMD -MP
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -pedantic -MMD -MP
 INCLUDE =	-I includes							\
 			-I includes/cgi 					\
 			-I includes/servers					\
@@ -87,9 +87,8 @@ re: fclean all
 debug: CXXFLAGS += -g -fsanitize=address
 debug: re
 
-# valgrind: CXXFLAGS += -g
-# valgrind: re
-valgrind: all
+valgrind: CXXFLAGS += -g
+valgrind: re
 	valgrind --leak-check=full ./$(NAME) confs/config.txt
 
 .PHONY: all clean fclean cgi fclean-cgi re debug valgrind
