@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 10:22:45 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 18:13:27 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/19 15:36:29 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -177,4 +177,23 @@ std::vector<Request*> parseMultipleRequest(std::string const& allMsgs) {
 		}
 	}
 	return (reqVec);
+}
+
+std::string Request::getCookieValue(std::string const& key) const {
+	std::string value = "";
+	std::string cookieStr = this->getSingleHeader("Cookie");
+
+	size_t keyPos = cookieStr.find(key);
+	if (keyPos != std::string::npos) {
+		size_t valuePos = cookieStr.find("=", keyPos);
+		if (valuePos != std::string::npos) {
+			size_t endPos = cookieStr.find(";", valuePos);
+			if (endPos != std::string::npos) {
+				value = cookieStr.substr(valuePos + 1, endPos - valuePos - 1);
+			} else {
+				value = cookieStr.substr(valuePos + 1);
+			}
+		}
+	}
+	return (value);
 }

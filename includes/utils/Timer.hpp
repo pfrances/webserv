@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/07/13 19:28:38 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 15:28:15 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/19 14:25:26 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,7 @@ class Timer {
 		double			getElapsedTimeSince(std::time_t time) const;
 		double			getElapsedTimeSince(void) const;
 		void			printLogTime(void) const;
+		static double	getCurrentTime(void);
 
 	private:
 		std::time_t	startTime_;

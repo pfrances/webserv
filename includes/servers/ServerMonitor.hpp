@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/17 15:00:29 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/18 11:43:22 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/19 14:45:41 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,6 +44,7 @@
 # include "CgiHandler.hpp"
 # include "Request.hpp"
 # include "Response.hpp"
+# include "Cookie.hpp"
 
 class ServerMonitor
 {
@@ -65,6 +66,8 @@ class ServerMonitor
 		std::vector<pollfd>			pollfdsVec_;
 		Timer						timer_;
 		bool						logsOn_;
+		std::map<std::string,
+				Cookie*>			cookiesMap_;
 
 		void						parseConfigFile(std::string const& configFileName);
 
@@ -90,6 +93,7 @@ class ServerMonitor
 		void						removePollfd(int fd);
 
 		void						checkTimeOut(void);
+		void						monitorCookiesAtReception(Request* req, Response* res);
 };
 
 class IoTroubleException : public std::runtime_error {

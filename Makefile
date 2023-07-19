@@ -6,7 +6,7 @@
 #    By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/02/26 11:07:21 by pfrances          #+#    #+#              #
-#    Updated: 2023/07/19 13:12:12 by pfrances         ###   ########.fr        #
+#    Updated: 2023/07/19 14:22:56 by pfrances         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -34,6 +34,7 @@ SRCS =	$(SRCS_DIR)/main.cpp				\
 		$(SERVERS_DIR)/Location.cpp			\
 		$(SERVERS_DIR)/Server.cpp			\
 		$(SERVERS_DIR)/MimeTypes.cpp		\
+		$(SERVERS_DIR)/Cookie.cpp			\
 		$(CGI_DIR)/CgiHandler.cpp			\
 		$(HTTP_DIR)/HttpMessage.cpp			\
 		$(HTTP_DIR)/Request.cpp				\

@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:45:00 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 15:29:41 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/19 16:16:35 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,13 +37,18 @@ class CgiHandler {
 		std::string	const&				getCgiPath(void) const;
 		int								getClientFd(void) const;
 		double							getStartTime(void) const;
+		std::string const&				getCookieId(void) const;
+
+		bool							isCookieIdSet(void) const;
 
 		void							setCgiPath(std::string const& path);
 		void							setClientFd(int fd);
 		void							setStartTime(double time);
 		void							setEnvKey(std::string const& key, std::string const& value);
 		void							setEnv(Request const& req);
+		void							setCookieId(std::string const& cookieId);
 		void							writeBodyToCgiStdin(void);
+		void							setCookieIdIsNew(bool isNew);
 
 	private:
 		CgiHandler(void);
@@ -56,6 +61,8 @@ class CgiHandler {
 		int							clientFd_;
 		double						startTime_;
 		std::string					body_;
+		std::string					cookieId_;
+		bool						cookieIdIsNew_;
 
 		char *const*				StringVecToCharPtrArray(std::vector<std::string> const& vec) const;
 };

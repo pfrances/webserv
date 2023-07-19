@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 19:02:03 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/17 10:48:48 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/19 15:35:45 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,7 @@ class Request : public HttpMessage {
 			std::string> const&	getQuery(void) const;
 		std::string const&		getQueryStr(void) const;
 		std::string const&		getHttpVersion(void) const;
+		std::string				getCookieValue(std::string const& key) const;
 
 		void					setMethod(std::string const& method);
 		void					setUri(std::string const& uri);

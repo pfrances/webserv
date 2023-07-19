@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 19:44:51 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/19 11:50:38 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/19 16:16:58 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,13 +17,15 @@
 #include <signal.h>
 #include <iostream>
 
-CgiHandler::CgiHandler(void) : pid_(-1), cgiPath_(""), cgiExecutor_(""), pipe_(), envVec_(), argsVec_() {
+CgiHandler::CgiHandler(void) : pid_(-1), cgiPath_(""), cgiExecutor_(""),
+							pipe_(), envVec_(), argsVec_(), cookieId_(""), cookieIdIsNew_(false) {
 	this->pipe_[0] = -1;
 	this->pipe_[1] = -1;
 }
 
 CgiHandler::CgiHandler(std::string const& cgiPath, std::string const& cgiExecutor)
-	: pid_(-1), cgiPath_(cgiPath), cgiExecutor_(cgiExecutor), pipe_(), envVec_(), argsVec_() {
+						: pid_(-1), cgiPath_(cgiPath), cgiExecutor_(cgiExecutor),
+						pipe_(), envVec_(), argsVec_(), cookieId_(""), cookieIdIsNew_(false) {
 	this->pipe_[0] = -1;
 	this->pipe_[1] = -1;
 	if (!cgiExecutor_.empty()) {
@@ -33,7 +35,10 @@ CgiHandler::CgiHandler(std::string const& cgiPath, std::string const& cgiExecuto
 }
 
 CgiHandler::CgiHandler(CgiHandler const& other)
-	: pid_(other.pid_), cgiPath_(other.cgiPath_), cgiExecutor_(other.cgiExecutor_), envVec_(other.envVec_), argsVec_(other.argsVec_) {
+								:	pid_(other.pid_), cgiPath_(other.cgiPath_),
+									cgiExecutor_(other.cgiExecutor_),
+									envVec_(other.envVec_), argsVec_(other.argsVec_),
+									cookieId_(other.cookieId_), cookieIdIsNew_(other.cookieIdIsNew_) {
 	this->pipe_[0] = other.pipe_[0];
 	this->pipe_[1] = other.pipe_[1];
 }
@@ -47,6 +52,8 @@ CgiHandler &CgiHandler::operator=(CgiHandler const& other) {
 		this->pipe_[1] = other.pipe_[1];
 		this->envVec_ = other.envVec_;
 		this->argsVec_ = other.argsVec_;
+		this->cookieId_ = other.cookieId_;
+		this->cookieIdIsNew_ = other.cookieIdIsNew_;
 	}
 	return *this;
 }
@@ -92,6 +99,14 @@ double CgiHandler::getStartTime(void) const {
 	return this->startTime_;
 }
 
+std::string const& CgiHandler::getCookieId(void) const {
+	return this->cookieId_;
+}
+
+bool CgiHandler::isCookieIdSet(void) const {
+	return this->cookieIdIsNew_;
+}
+
 void CgiHandler::setCgiPath(std::string const& path) {
 	this->cgiPath_ = path;
 }
@@ -125,6 +140,14 @@ void	CgiHandler::setEnv(Request const& req) {
 		this->body_ = body;
 	}
 	this->setEnvKey("CONTENT_LENGTH", ParseTools::intToString(this->body_.length()));
+}
+
+void	CgiHandler::setCookieId(std::string const& id) {
+	this->cookieId_ = id;
+}
+
+void	CgiHandler::setCookieIdIsNew(bool isNew) {
+	this->cookieIdIsNew_ = isNew;
 }
 
 void	CgiHandler::writeBodyToCgiStdin(void) {

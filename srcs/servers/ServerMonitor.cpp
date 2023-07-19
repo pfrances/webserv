@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/19 11:55:01 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/19 16:46:34 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,8 @@ ServerMonitor::ServerMonitor(std::string const& confFileName) :	serversMap_(),
 																responsesMap_(),
 																pollfdsVec_(),
 																timer_(),
-																logsOn_(false) {
+																logsOn_(false),
+																cookiesMap_() {
 	this->addNewPollfd(STDIN_FILENO, POLLIN);
 	try {
 		this->parseConfigFile(confFileName);
@@ -42,7 +43,8 @@ ServerMonitor::ServerMonitor(ServerMonitor const& other) :	serversMap_(other.ser
 															responsesMap_(other.responsesMap_),
 															pollfdsVec_(other.pollfdsVec_),
 															timer_(other.timer_),
-															logsOn_(other.logsOn_) {
+															logsOn_(other.logsOn_),
+															cookiesMap_(other.cookiesMap_) {
 
 }
 
@@ -55,6 +57,7 @@ ServerMonitor &ServerMonitor::operator=(ServerMonitor const& other) {
 		this->pollfdsVec_ = other.pollfdsVec_;
 		this->timer_ = other.timer_;
 		this->logsOn_ = other.logsOn_;
+		this->cookiesMap_ = other.cookiesMap_;
 	}
 	return (*this);
 }
@@ -87,6 +90,13 @@ ServerMonitor::~ServerMonitor(void) {
 	for(; itCgi != iteCgi; itCgi++) {
 		delete itCgi->second;
 		itCgi->second = NULL;
+	}
+
+	std::map<std::string, Cookie*>::iterator itCookie = this->cookiesMap_.begin();
+	std::map<std::string, Cookie*>::iterator iteCookie = this->cookiesMap_.end();
+	for (; itCookie != iteCookie; itCookie++) {
+		delete itCookie->second;
+		itCookie->second = NULL;
 	}
 }
 
@@ -176,6 +186,33 @@ void	ServerMonitor::handleUserInput(void) {
 		throw ShutdownException("Shutting down...");
 	} else if (msg == "log" || msg == "logs") {
 		this->switchLogs();
+	} else if (msg == "cookies" || msg == "cookie") {
+		for (std::map<std::string, Cookie*>::iterator it = this->cookiesMap_.begin(); it != this->cookiesMap_.end(); it++) {
+			std::cout << it->first << std::endl;
+		}
+	} else if (msg == "reset cookie" || "reset cookies") {
+		for (std::map<std::string, Cookie*>::iterator it = this->cookiesMap_.begin(); it != this->cookiesMap_.end(); it++) {
+			delete it->second;
+		}
+		this->cookiesMap_.clear();
+	} else if (msg.find("rm ") == 0) {
+		std::string cookie = msg.substr(3);
+		if (this->cookiesMap_.find(cookie) != this->cookiesMap_.end()) {
+			delete this->cookiesMap_[cookie];
+			this->cookiesMap_.erase(cookie);
+		} else {
+			std::cout << "Unknown cookie: " << cookie << std::endl;
+		}
+	}
+	else if (msg.find("show ") == 0) {
+		std::string cookie = msg.substr(5);
+		if (this->cookiesMap_.find(cookie) != this->cookiesMap_.end()) {
+			std::cout << "Cookie: " << cookie << "\n" << this->cookiesMap_[cookie]->getContent() << std::endl;
+		} else {
+			std::cout << "Unknown cookie: " << cookie << std::endl;
+		}
+	} else if (!msg.empty()) {
+		std::cout << "Unknown command: " << msg << std::endl;
 	}
 }
 
@@ -192,6 +229,7 @@ void	ServerMonitor::handleClientRequest(int fd) {
 	}
 	Server *server = this->clientsMap_[fd];
 	Response *res = server->handleClientRequest(*req);
+	this->monitorCookiesAtReception(req, res);
 	if (res->hasCgiHandler()) {
 		CgiHandler *cgi = res->getCgiHandler();
 		cgi->setStartTime(this->timer_.getElapsedTimeSince());
@@ -222,14 +260,22 @@ void	ServerMonitor::handleCgiResponse(pollfd const& pollfd) {
 	}
 
 	CgiHandler *cgi = this->cgiHandlersMap_[pollfd.fd];
+	std::string cookieId = cgi->getCookieId();
+	bool		isCookieSet = cgi->isCookieIdSet();
 	int clientFd = cgi->getClientFd();
 	closeConnection(pollfd.fd);
 
 	Response *res = new Response(msg);
-	if (res->isValid() == false) {
+	if (!res->isValid()) {
 		delete res;
 		Server *server = this->clientsMap_[clientFd];
 		res = server->handleError(500);
+	}
+	if (this->cookiesMap_.find(cookieId) != this->cookiesMap_.end()) {
+		this->cookiesMap_[cookieId]->addContent("RESPONSE:\t" + res->getStartLine() + "\n");
+		if (isCookieSet) {
+			res->setSingleHeader("Set-Cookie", cookieId);
+		}
 	}
 	this->responsesMap_[clientFd] = res;
 	this->setEventsToPollfd(clientFd, POLLOUT);
@@ -444,6 +490,9 @@ void	ServerMonitor::checkTimeOut(void) {
 			int clientFd = cgiHandler->getClientFd();
 			Server *server = this->clientsMap_[clientFd];
 			Response *res = server->handleError(504);
+			if (cgiHandler->getCookieId().empty() == false) {
+				this->cookiesMap_[cgiHandler->getCookieId()]->addContent("RESPONSE:\t" + res->getStartLine() + "\n");
+			}
 			this->responsesMap_[clientFd] = res;
 			this->setEventsToPollfd(clientFd, POLLOUT);
 			fdsToClose.push_back(cgiHandler->getPipeReadFd());
@@ -465,9 +514,50 @@ void	ServerMonitor::checkTimeOut(void) {
 	for (size_t i = 0; i < fdsToClose.size(); i++) {
 		this->closeConnection(fdsToClose[i]);
 	}
+
+	std::map<std::string, Cookie*>::iterator itCookie = this->cookiesMap_.begin();
+	std::map<std::string, Cookie*>::iterator iteCookie = this->cookiesMap_.end();
+	for (; itCookie != iteCookie; itCookie++) {
+		Cookie *cookie = itCookie->second;
+		if (cookie->isExpired()) {
+			delete cookie;
+			itCookie->second = NULL;
+		}
+	}
+	for (itCookie = this->cookiesMap_.begin(); itCookie != iteCookie; itCookie++) {
+		if (itCookie->second == NULL)
+			this->cookiesMap_.erase(itCookie);
+	}
 }
 
 void	ServerMonitor::switchLogs(void) {
 	this->logsOn_ = !this->logsOn_;
 	std::cout << "Switching logs " << (this->logsOn_ ? "on" : "off") << std::endl;
+}
+
+void	ServerMonitor::monitorCookiesAtReception(Request* req, Response* res) {
+
+	std::string reqLog = " REQUEST:\t" + req->getStartLine() + "\t(" + req->getHostName() + ")\n";
+	std::string resLog = "RESPONSE:\t" + res->getStartLine() + "\n";
+	std::string cookieId = req->getCookieValue("id");
+	Cookie *cookie;
+	if (cookieId.empty() || this->cookiesMap_.find(cookieId) == this->cookiesMap_.end()) {
+		cookie = new Cookie();
+		cookieId = cookie->getCookieId();
+		this->cookiesMap_[cookieId] = cookie;
+		cookie->addContent(reqLog);
+		if (res->hasCgiHandler()) {
+			res->getCgiHandler()->setCookieId(cookieId);
+			res->getCgiHandler()->setCookieIdIsNew(true);
+		} else {
+			res->setSingleHeader("Set-Cookie", "id=" + cookieId);
+			cookie->addContent("RESPONSE:\t" + res->getStartLine() + "\n");
+		}
+	} else  {
+		cookie = this->cookiesMap_[cookieId];
+		cookie->addContent(reqLog);
+		if (res->hasCgiHandler()) {
+			res->getCgiHandler()->setCookieId(cookieId);
+		}
+	}
 }
