@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/18 15:37:47 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/19 16:46:34 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/19 17:20:38 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -184,13 +184,16 @@ void	ServerMonitor::handleUserInput(void) {
 	std::getline(std::cin, msg);
 	if (msg == "exit") {
 		throw ShutdownException("Shutting down...");
-	} else if (msg == "log" || msg == "logs") {
+	} else if (msg == "logs" || msg == "log") {
 		this->switchLogs();
 	} else if (msg == "cookies" || msg == "cookie") {
 		for (std::map<std::string, Cookie*>::iterator it = this->cookiesMap_.begin(); it != this->cookiesMap_.end(); it++) {
 			std::cout << it->first << std::endl;
 		}
-	} else if (msg == "reset cookie" || "reset cookies") {
+		if (this->cookiesMap_.size() == 0) {
+			std::cout << "No cookies" << std::endl;
+		}
+	} else if (msg == "reset cookies" || msg == "reset cookie") {
 		for (std::map<std::string, Cookie*>::iterator it = this->cookiesMap_.begin(); it != this->cookiesMap_.end(); it++) {
 			delete it->second;
 		}
@@ -211,8 +214,44 @@ void	ServerMonitor::handleUserInput(void) {
 		} else {
 			std::cout << "Unknown cookie: " << cookie << std::endl;
 		}
+	} else if (msg == "session" || msg == "sessions") {
+		std::map<int, Server*>::iterator it = this->clientsMap_.begin();
+		std::map<int, Server*>::iterator ite = this->clientsMap_.end();
+		for (; it != ite; it++) {
+			std::time_t lastRequestTime = it->second->getClientLastRequestTime(it->first);
+			std::cout << "Fd: [" << it->first << "]\t Last request time\t";
+			std::cout << std::asctime(std::localtime(&lastRequestTime));
+		}
+		if (this->clientsMap_.size() == 0) {
+			std::cout << "No active sessions" << std::endl;
+		}
+	} else if (msg.find("close ") == 0) {
+		try {
+			int fd = ParseTools::stringToInt(msg.substr(6));
+			if (this->clientsMap_.find(fd) != this->clientsMap_.end()) {
+				closeConnection(fd);
+				std::cout << "Connection closed: " << fd << std::endl;
+			} else {
+				std::cout << "Unknown client: " << fd << std::endl;
+			}
+		} catch (std::exception& e) {
+			std::cout << "Invalid file descriptor: " << msg.substr(6) << std::endl;
+			return ;
+		}
+	} else if (msg == "help") {
+		std::cout << "Available commands:" << std::endl;
+		std::cout << "Enable/disable logs: [logs] or [log]" << std::endl;
+		std::cout << "List all cookies: [cookies] or [cookie]" << std::endl;
+		std::cout << "Reset cookies: [reset cookies] or [reset cookie]" << std::endl;
+		std::cout << "Show a cookie: [show <cookie>]" << std::endl;
+		std::cout << "Remove a cookie: [rm <cookie>]" << std::endl;
+		std::cout << "List all sessions: [session] or [sessions]" << std::endl;
+		std::cout << "Close a connection: [close <fd>]" << std::endl;
 	} else if (!msg.empty()) {
 		std::cout << "Unknown command: " << msg << std::endl;
+	}
+	if (!msg.empty()) {
+		std::cout << std::endl;
 	}
 }
 

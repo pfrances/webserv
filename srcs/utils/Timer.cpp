@@ -6,7 +6,7 @@
 /*   By: pfrances <pfrances@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/07/13 19:33:37 by pfrances          #+#    #+#             */
-/*   Updated: 2023/07/19 14:27:39 by pfrances         ###   ########.fr       */
+/*   Updated: 2023/07/19 17:07:26 by pfrances         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,5 +57,4 @@ void Timer::printLogTime() const {
 	std::string timeStr = std::asctime(std::localtime(&currentTime));
 	timeStr.erase(timeStr.end() - 1);
 	std::cout << "[" << timeStr << "] ";
-
 }
